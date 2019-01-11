@@ -1,24 +1,24 @@
 package tomasvolker.komputo.dsl.builder
 
-import org.tensorflow.Graph
 import org.tensorflow.Operand
 import org.tensorflow.op.core.Gradients
 import org.tensorflow.op.core.Variable
+import tomasvolker.komputo.asOfAny
 import tomasvolker.numeriko.core.dsl.I
-import tomasvolker.tensorflow.dsl.group
-import tomasvolker.tensorflow.dsl.name
-import tomasvolker.tensorflow.dsl.shape
-import tomasvolker.tensorflow.dsl.toShape
+import tomasvolker.komputo.dsl.group
+import tomasvolker.komputo.dsl.localName
+import tomasvolker.komputo.dsl.name
+import tomasvolker.komputo.dsl.shape
 
-fun <T> ModelBuilder.meanSquareError(output: Operand<T>, target: Operand<T>): Operand<T> =
-    ops.reduceMean(square(target - output), constant(I[0, 1]))
+fun ModelBuilder.meanSquareError(output: Operand<*>, target: Operand<*>): Operand<*> =
+    reduceMean(square(target - output), constant(I[0, 1]))
 
 interface TrainingAlgorithm {
 
     fun buildOperation(
         builder: TrainableModelBuilder,
-        loss: Operand<Float>,
-        variableList: List<Variable<Float>>
+        loss: Operand<*>,
+        variableList: List<Variable<*>>
     ): Operand<*>
 
 }
@@ -27,8 +27,8 @@ abstract class GradientAlgorithm: TrainingAlgorithm {
 
     override fun buildOperation(
         builder: TrainableModelBuilder,
-        loss: Operand<Float>,
-        variableList: List<Variable<Float>>
+        loss: Operand<*>,
+        variableList: List<Variable<*>>
     ): Operand<*> {
 
         with(builder) {
@@ -51,7 +51,7 @@ abstract class GradientAlgorithm: TrainingAlgorithm {
 
     abstract fun buildUpdateOperations(
         builder: TrainableModelBuilder,
-        variableList: List<Variable<Float>>,
+        variableList: List<Variable<*>>,
         gradients: Gradients
     ): List<Operand<*>>
 
@@ -61,14 +61,18 @@ class GradientDescent(val rate: Double): GradientAlgorithm() {
 
     override fun buildUpdateOperations(
         builder: TrainableModelBuilder,
-        variableList: List<Variable<Float>>,
+        variableList: List<Variable<*>>,
         gradients: Gradients
     ): List<Operand<*>> {
         with(builder) {
             val rate = ops.constant(rate.toFloat())
 
             return variableList.mapIndexed { i, variable ->
-                ops.applyGradientDescent(variable, rate, gradients.dy(i))
+                ops.applyGradientDescent(
+                    variable.asOfAny(),
+                    rate.asOfAny(),
+                    gradients.dy(i)
+                )
             }
         }
     }
@@ -82,7 +86,7 @@ class Momentum(
 
     override fun buildUpdateOperations(
         builder: TrainableModelBuilder,
-        variableList: List<Variable<Float>>,
+        variableList: List<Variable<*>>,
         gradients: Gradients
     ): List<Operand<*>> {
         with(builder) {
@@ -91,16 +95,22 @@ class Momentum(
 
             return variableList.mapIndexed { i, variable ->
 
-                val variableShape = variable.shape.toIntArray1D()
+                val variableShape = variable.shape
 
                 val accumulator = variable(
-                    "${variable.name.substringAfter('/')}_acc",
-                    ops.broadcastTo(constant(0f), constant(variableShape)),
+                    "${variable.localName}_accumulator",
+                    broadcastTo(constant(0.0), constant(variableShape)),
                     shape = variableShape,
                     trainable = false
                 )
 
-                ops.applyMomentum(variable, accumulator, rate, gradients.dy(i), momentum)
+                ops.applyMomentum(
+                    variable.asOfAny(),
+                    accumulator.asOfAny(),
+                    rate.asOfAny(),
+                    gradients.dy(i),
+                    momentum.asOfAny()
+                )
             }
         }
     }
@@ -109,29 +119,35 @@ class Momentum(
 }
 
 class Adagrad(
-    val rate: Double = 0.01
+    val rate: Double = 0.01,
+    val epsilon: Double = 1e-8
 ): GradientAlgorithm() {
 
     override fun buildUpdateOperations(
         builder: TrainableModelBuilder,
-        variableList: List<Variable<Float>>,
+        variableList: List<Variable<*>>,
         gradients: Gradients
     ): List<Operand<*>> {
         with(builder) {
-            val rate = ops.constant(rate.toFloat())
+            val rate = constant(rate)
 
             return variableList.mapIndexed { i, variable ->
 
-                val variableShape = variable.shape.toIntArray1D()
+                val variableShape = variable.shape
 
                 val accumulator = variable(
-                    "${variable.name.substringAfter('/')}_acc",
-                    ops.broadcastTo(constant(1e-8f), constant(variableShape)),
+                    "${variable.localName}_accumulator",
+                    broadcastTo(constant(epsilon), constant(variableShape)),
                     shape = variableShape,
                     trainable = false
                 )
 
-                ops.applyAdagrad(variable, accumulator, rate, gradients.dy(i))
+                ops.applyAdagrad(
+                    variable.asOfAny(),
+                    accumulator.asOfAny(),
+                    rate.asOfAny(),
+                    gradients.dy(i)
+                )
             }
         }
     }

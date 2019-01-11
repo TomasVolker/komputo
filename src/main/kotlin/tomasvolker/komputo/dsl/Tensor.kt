@@ -1,15 +1,11 @@
-package tomasvolker.tensorflow.dsl
+package tomasvolker.komputo.dsl
 
-import org.tensorflow.DataType
 import org.tensorflow.Tensor
 import tomasvolker.numeriko.core.implementations.numeriko.array1d.double.NumerikoDoubleArray1D
 import tomasvolker.numeriko.core.implementations.numeriko.array2d.double.NumerikoDoubleArray2D
 import tomasvolker.numeriko.core.implementations.numeriko.arraynd.NumerikoDoubleArrayND
-import tomasvolker.numeriko.core.interfaces.array1d.generic.get
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
-import tomasvolker.numeriko.core.interfaces.arraynd.generic.ArrayND
 import tomasvolker.numeriko.core.interfaces.factory.*
-import java.nio.DoubleBuffer
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 

@@ -1,7 +1,7 @@
 package tomasvolker.komputo.mnist
 
-import org.tensorflow.Operand
 import tomasvolker.komputo.dsl.builder.*
+import tomasvolker.komputo.dsl.trainSession
 import tomasvolker.kyplot.dsl.line
 import tomasvolker.kyplot.dsl.showPlot
 import tomasvolker.kyplot.dsl.xAxis
@@ -12,9 +12,8 @@ import tomasvolker.numeriko.core.interfaces.array1d.double.DoubleArray1D
 import tomasvolker.numeriko.core.interfaces.factory.doubleArray1D
 import tomasvolker.numeriko.core.operations.stack
 import tomasvolker.numeriko.core.primitives.indicative
-import tomasvolker.performance.reduceArgmax
-import tomasvolker.performance.stack
-import tomasvolker.tensorflow.dsl.*
+import tomasvolker.komputo.performance.reduceArgmax
+import tomasvolker.komputo.performance.stack
 import kotlin.system.measureTimeMillis
 
 var lastLine = ""
@@ -53,7 +52,7 @@ fun main() {
 
     val model = trainableModel {
 
-        val input = input<Float>(shape = I[dynamic, 28, 28])
+        val input = input(shape = I[dynamic, 28, 28])
 
         val model = sequential(input) {
 
@@ -67,30 +66,27 @@ fun main() {
             conv2d(
                 kernelSize = I[3, 3],
                 filterCount = 32,
-                activation = ops::relu
+                activation = ::relu
             )
             conv2d(
                 kernelSize = I[3, 3],
                 filterCount = 64,
-                activation = ops::relu
+                activation = ::relu
             )
             maxPool2D(
                 windowSize = I[2, 2],
                 strides = I[1, 1]
             )
             flatten()
-            dense(128, activation = ops::sigmoid)
-            dense(10, activation = ops::identity)
+            dense(128, activation = ::sigmoid)
+            dense(10, activation = ::identity)
 
 
         }
 
-        output<Float>(model)
+        output(model)
 
-        loss = ops.softmaxCrossEntropyWithLogits(
-            output as Operand<Float>,
-            target as Operand<Float>
-        ).loss().asOutput()
+        loss = softmaxCrossEntropyWithLogits(output, target)
 
         trainingAlgorithm = Adagrad()
     }

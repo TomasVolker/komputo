@@ -1,4 +1,4 @@
-package tomasvolker.performance
+package tomasvolker.komputo.performance
 
 open class Timer(
     var nanos: Long = System.nanoTime()

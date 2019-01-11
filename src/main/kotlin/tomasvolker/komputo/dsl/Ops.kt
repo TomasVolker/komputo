@@ -1,12 +1,14 @@
-package tomasvolker.tensorflow.dsl
+package tomasvolker.komputo.dsl
 
+import org.tensorflow.DataType
 import org.tensorflow.Operand
-import org.tensorflow.Operation
 import org.tensorflow.OperationBuilder
 import org.tensorflow.Shape
 import org.tensorflow.op.Ops
 import org.tensorflow.op.core.*
+import tomasvolker.komputo.*
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
+import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 
 
 inline fun Ops.scope(name: String, init: Ops.()->Unit): Ops =
@@ -14,52 +16,76 @@ inline fun Ops.scope(name: String, init: Ops.()->Unit): Ops =
 
 fun Ops.withNameOrSame(name: String? = null) = name?.let { withName(it) } ?: this
 
+
 val Ops.lastIndex: Int get() = -1
 val Ops.dynamic: Int get() = -1
 
-inline fun <reified T> Ops.placeholder(
-    name: String? = null,
-    shape: Shape = Shape.unknown(),
-    dtype: Class<T> = T::class.java
-): Placeholder<T> =
-    withNameOrSame(name).placeholder(dtype, Placeholder.shape(shape))
 
-inline fun <reified T> Ops.placeholder(
+fun Ops.placeholder(
+    dtype: DataType,
     name: String? = null,
     shape: IntArray1D? = null
-): Placeholder<T> = placeholder(name, shape?.toShape() ?: Shape.unknown())
+): Placeholder<*> =
+    withNameOrSame(name).placeholder(dtype.toClass(), Placeholder.shape(shape.toShape()))
 
-fun IntArray1D.toShape(): Shape =
-    Shape.make(
-        this[0].toLong(),
-        *this.drop(1).map { it.toLong() }.toLongArray()
-    )
 
-inline fun <reified T> Ops.variable(
-    name: String? = null,
-    shape: Shape = Shape.unknown(),
-    dtype: Class<T> = T::class.java
-): Variable<T> =
-    withNameOrSame(name).variable(shape, dtype)
-
-inline fun <reified T> Ops.variable(
+fun Ops.variable(
+    dataType: DataType,
     name: String? = null,
     shape: IntArray1D? = null
-): Variable<T> = variable(name, shape?.toShape() ?: Shape.unknown())
+): Variable<*> = withNameOrSame(name).variable(shape.toShape(), dataType.toClass())
 
-inline fun <reified T> Ops.assign(
-    variable: Operand<T>,
-    value: Operand<T>,
-    name: String? = null,
-    dtype: Class<T> = T::class.java
-): Assign<T> =
-    withNameOrSame(name).assign(variable, value)
+
+
+fun Ops.assign(
+    variable: Variable<*>,
+    value: Operand<*>,
+    name: String? = null
+): Assign<*> =
+    withNameOrSame(name).assign(variable.asOfAny(), value.asOfAny())
+
+
+
+fun Ops.constant(
+    value: DoubleArrayND,
+    dataType: DataType = DataType.FLOAT,
+    name: String? = null
+): Constant<*> =
+    value.toTensor().use {
+        withNameOrSame(name).constant(it, dataType.toClass()) // cast value
+    }
+
+
+fun Ops.constant(
+    value: IntArray1D,
+    dataType: DataType = DataType.INT32,
+    name: String? = null
+): Constant<*> =
+    withNameOrSame(name).constant(value.toIntArray(), dataType.toClass()) // cast value
+
+
+fun Ops.constant(
+    value: Double,
+    dataType: DataType,
+    name: String? = null
+): Constant<*> =
+    withNameOrSame(name).constant(value.castTo(dataType), dataType.toClass())
+
+
+fun Ops.constant(
+    value: Int,
+    dataType: DataType,
+    name: String? = null
+): Constant<*> =
+    withNameOrSame(name).constant(value.castTo(dataType), dataType.toClass())
+
 
 
 fun Ops.gradientDescent(
-    cost: Operand<Float>,
-    variableList: List<Variable<Float>>,
-    rate: Double
+    cost: Operand<*>,
+    variableList: List<Variable<*>>,
+    rate: Double,
+    dataType: DataType
 ): Operand<*> {
 
     var result: List<Operand<*>>? = null
@@ -68,16 +94,18 @@ fun Ops.gradientDescent(
 
         val grad = withName("gradient").gradients(cost, variableList)
 
-        val alpha = constant(rate.toFloat())
+        val alpha = constant(rate, dataType)
 
         result = variableList.mapIndexed { i, variable ->
-            applyGradientDescent(variable, alpha, grad.dy(i))
+            applyGradientDescent<Any>(variable.asOfAny(), alpha.asOfAny(), grad.dy(i))
         }
 
     }
 
     return withName("Train").group(result ?: error(""))
 }
+
+
 
 inline fun Ops.buildOp(
     operation: String,
@@ -86,13 +114,21 @@ inline fun Ops.buildOp(
 ) =
     scope().graph().opBuilder(operation, name).apply(init).build()
 
-fun Ops.constant(shape: IntArray1D): Constant<Int> = constant(shape.toIntArray())
 
-inline fun <reified T: Number> Ops.randomNormal(shape: IntArray1D): RandomNormal<T> =
-    randomNormal(constant(shape), T::class.java)
 
-fun <T> Ops.reshape(operand: Operand<T>, shape: IntArray1D): Reshape<T> =
-    reshape(operand, constant(shape.toIntArray()))
+fun Ops.randomNormal(
+    shape: IntArray1D,
+    dataType: DataType
+): RandomNormal<*> =
+    randomNormal<Number, Number>(
+        constant(shape, dataType).asOfNumber(),
+        dataType.toClass() as Class<Number>
+    )
+
+
+fun Ops.reshape(operand: Operand<*>, shape: IntArray1D): Reshape<*> =
+    reshape(operand.asOfAny(), constant(shape).asOfNumber())
+
 
 fun Ops.group(vararg operands: Operand<*>): Operand<*> =
     group(operands.toList())
@@ -109,6 +145,7 @@ fun Ops.group(name: String, operands: Iterable<Operand<*>>): Operand<*> =
             addControlInput(it.asOutput().op())
         }
     }.output<Any>(0)
+
 
 fun Ops.noOperation(name: String? = null): Operand<*> =
     buildOp("NoOp", name = scope().makeOpName(name)).output<Any>(0)

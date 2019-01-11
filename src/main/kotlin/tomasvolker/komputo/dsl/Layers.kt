@@ -1,32 +1,33 @@
-package tomasvolker.tensorflow.dsl
+package tomasvolker.komputo.dsl
 
 import org.tensorflow.Operand
+import tomasvolker.komputo.asOfAny
+import tomasvolker.komputo.asOfNumber
 import tomasvolker.komputo.dsl.builder.ModelBuilder
-import tomasvolker.komputo.dsl.builder.toIntArray1D
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.operations.reduction.product
 import kotlin.math.sqrt
 
-inline fun <reified T: Number> ModelBuilder.residual(
-    input: Operand<T>,
+fun ModelBuilder.residual(
+    input: Operand<*>,
     inputSize: Int,
-    activation: (linearOutput: Operand<T>) -> Operand<T>
-): Operand<T> = dense(
+    activation: (linearOutput: Operand<*>) -> Operand<*>
+): Operand<*> = dense(
     input = input,
     inputSize = inputSize,
     outputSize = inputSize,
     activation = activation
 ) + input
 
-inline fun <reified T: Number> ModelBuilder.dense(
-    input: Operand<T>,
+fun ModelBuilder.dense(
+    input: Operand<*>,
     inputSize: Int,
     outputSize: Int,
-    activation: (linearOutput: Operand<T>)-> Operand<T> = ops::identity
-): Operand<T> {
+    activation: (linearOutput: Operand<*>)-> Operand<*> = ::identity
+): Operand<*> {
 
-    var result: Operand<T>? = null
+    var result: Operand<*>? = null
 
     scope("dense_layer") {
 
@@ -39,13 +40,13 @@ inline fun <reified T: Number> ModelBuilder.dense(
         val w = variable(
             name = "weightMatrix",
             shape = weightsShape,
-            initialValue = randomNormal<T>(weightsShape, deviation = sqrt(1.0 / elementInputSize))
+            initialValue = randomNormal(weightsShape, deviation = sqrt(1.0 / elementInputSize))
         )
 
         val b = variable(
             name = "biasVector",
             shape = biasesShape,
-            initialValue = randomNormal<T>(biasesShape, deviation = sqrt(1.0 / elementInputSize))
+            initialValue = randomNormal(biasesShape, deviation = sqrt(1.0 / elementInputSize))
         )
 
         result = activation((input matmul w) + b)
@@ -60,18 +61,18 @@ enum class ConvPadding {
     VALID
 }
 
-inline fun <reified T: Number> ModelBuilder.conv2D(
-    input: Operand<T>,
+fun ModelBuilder.conv2D(
+    input: Operand<*>,
     kernelSize: IntArray1D,
     filterCount: Int = 1,
     stride: IntArray1D = I[1, 1],
     padding: ConvPadding = ConvPadding.SAME,
-    activation: (linearOutput: Operand<T>)-> Operand<T> = ops::identity
-): Operand<T> {
+    activation: (linearOutput: Operand<*>)-> Operand<*> = ::identity
+): Operand<*> {
 
-    var result: Operand<T>? = null
+    var result: Operand<*>? = null
 
-    val inputShape = input.shape.toIntArray1D()
+    val inputShape = input.shape
 
     scope("conv2d_layer") {
 
@@ -83,14 +84,14 @@ inline fun <reified T: Number> ModelBuilder.conv2D(
         val filter = variable(
             name = "filter",
             shape = filterShape,
-            initialValue = randomNormal<T>(filterShape, deviation = sqrt(1.0 / elementInputSize)),
+            initialValue = randomNormal(filterShape, deviation = sqrt(1.0 / elementInputSize)),
             trainable = true
         )
 
         result = activation(
             ops.conv2D(
-                input,
-                filter,
+                input.asOfNumber(),
+                filter.asOfNumber(),
                 I[1, stride[0], stride[1], 1].toList().map { it.toLong() },
                 when(padding) {
                     ConvPadding.SAME -> "SAME"

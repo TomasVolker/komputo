@@ -1,4 +1,4 @@
-package tomasvolker.performance
+package tomasvolker.komputo.performance
 
 inline fun forEach(
     times0: Int,

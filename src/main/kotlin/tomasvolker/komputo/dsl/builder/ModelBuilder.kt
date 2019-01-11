@@ -5,18 +5,23 @@ import org.tensorflow.Shape
 import org.tensorflow.op.Ops
 import org.tensorflow.op.Scope
 import org.tensorflow.op.core.*
-import tomasvolker.numeriko.core.dsl.I
+import org.tensorflow.op.core.Identity
+import org.tensorflow.op.core.Relu
+import org.tensorflow.op.core.Sigmoid
+import tomasvolker.komputo.asOfAny
+import tomasvolker.komputo.asOfNumber
+import tomasvolker.komputo.dsl.*
+import tomasvolker.komputo.toClass
+import tomasvolker.komputo.toShape
 import tomasvolker.numeriko.core.interfaces.array1d.double.DoubleArray1D
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
+import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1D
 import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
-import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
-import tomasvolker.numeriko.core.operations.concatenate
-import tomasvolker.tensorflow.dsl.*
 
 open class Model(
     val graph: Graph,
-    val inputList: List<Placeholder<*>>,
+    val inputList: List<Operand<*>>,
     val outputList: List<Operand<*>>,
     val initializeOperation: Operand<*>? = null
 ) {
@@ -27,7 +32,6 @@ open class Model(
 }
 
 
-fun Shape.toIntArray1D() = intArray1D(numDimensions()) { i -> size(i).toInt() }
 
 open class ModelBuilder(
     val ops: Ops,
@@ -35,8 +39,12 @@ open class ModelBuilder(
     val inputList: MutableList<Placeholder<*>> = mutableListOf(),
     val outputList: MutableList<Operand<*>> = mutableListOf(),
     val targetList: MutableList<Placeholder<*>> = mutableListOf(),
-    val trainableVariableList: MutableList<Variable<Float>> = mutableListOf()
+    val trainableVariableList: MutableList<Variable<*>> = mutableListOf()
 ) {
+
+    var defaultDataType: DataType = DataType.FLOAT
+    var defaultFloatDataType: DataType = DataType.FLOAT
+    var defaultIntegerDataType: DataType = DataType.INT32
 
     val scope: Scope = ops.scope()
     val graph: Graph = scope.graph()
@@ -73,68 +81,90 @@ open class ModelBuilder(
     val lastIndex: Int get() = -1
     val dynamic: Int get() = -1
 
-    inline fun <reified T> variable(
+
+    fun placeholder(
         name: String? = null,
-        initialValue: Operand<T>? = null,
         shape: IntArray1D? = null,
+        dataType: DataType = defaultDataType
+    ): Placeholder<*> = ops.placeholder(dataType, name, shape)
+
+
+    fun input(
+        name: String? = null,
+        shape: IntArray1D? = null
+    ): Placeholder<*> = placeholder(name, shape).also {
+        inputList += it
+    }
+
+
+    fun constant(
+        data: Double,
+        dataType: DataType = defaultFloatDataType
+    ): Constant<*> = ops.constant(data, dataType)
+
+    fun constant(
+        data: IntArray1D,
+        dataType: DataType = defaultIntegerDataType
+    ): Constant<*> = ops.constant(data, dataType)
+
+    fun constant(
+        data: DoubleArrayND,
+        dataType: DataType = defaultFloatDataType
+    ): Constant<*> = ops.constant(data, dataType)
+
+    fun constant(
+        data: Int,
+        dataType: DataType = defaultIntegerDataType
+    ): Constant<*> = ops.constant(data, dataType)
+
+
+
+    fun output(
+        operand: Operand<*>,
+        name: String? = null,
         trainable: Boolean = true
-    ): Variable<T> = ops.variable<T>(name, shape).also { variable ->
-        if (T::class.java == java.lang.Float::class.java && trainable) {
-            trainableVariableList.add(variable as Variable<Float>)
+    ): Operand<*> {
+
+        val result = if(name != null)
+            ops.withNameOrSame(name).identity(operand)
+        else
+            operand
+
+        outputList += result
+        if (trainable)
+            targetList += placeholder("${result.localName}_target", result.shape, operand.dataType)
+
+        return result
+    }
+
+
+    fun assign(
+        variable: Variable<*>,
+        value: Operand<*>,
+        name: String? = null
+    ): Assign<*> = ops.assign(variable, value, name)
+
+    infix fun Variable<*>.assignTo(value: Operand<*>): Assign<*> = assign(this, value)
+
+
+
+    fun variable(
+        name: String? = null,
+        initialValue: Operand<*>? = null,
+        shape: IntArray1D? = null,
+        dataType: DataType = initialValue?.dataType ?: defaultDataType,
+        trainable: Boolean = true
+    ): Variable<*> = ops.variable(dataType, name, shape).also { variable ->
+        if (trainable) {
+            trainableVariableList.add(variable)
         }
 
         initialValue?.let {
             initializationList += assign(variable, it, name = "init_${variable.name.substringAfter('/')}")
-        }
+        } ?: Unit
     }
 
-    fun constant(data: IntArray1D): Constant<Int> = ops.constant(data.toIntArray())
 
-    inline fun <reified T: Number> constant(data: Double): Constant<T> = ops.constant(data.cast<T>(), T::class.java)
-
-    fun constant(data: Float): Constant<Float> = ops.constant(data)
-    fun constant(data: Int): Constant<Int> = ops.constant(data)
-
-    inline fun <reified T> constant(data: T): Constant<T> = ops.constant(data, T::class.java)
-
-    fun constant(data: DoubleArray1D): Constant<Double> = ops.constant(data.toDoubleArray())
-
-    inline fun <reified T> placeholder(
-        name: String? = null,
-        shape: IntArray1D? = null
-    ): Placeholder<T> = ops.placeholder(name, shape)
-
-    inline fun <reified T> placeholder(
-        name: String? = null,
-        shape: Shape
-    ): Placeholder<T> = ops.placeholder(name, shape)
-
-    inline fun <reified T> input(
-        name: String? = null,
-        shape: IntArray1D? = null
-    ): Placeholder<T> = placeholder<T>(name, shape).also {
-        inputList += it
-    }
-
-    inline fun <reified T> output(
-        operand: Operand<*>,
-        name: String? = null,
-        trainable: Boolean = true
-    ): Operand<T> {
-        val casted = operand as Operand<T>
-        return (name?.let { ops.identity(casted) } ?: operand).also {
-            outputList += it
-            if (trainable) targetList += placeholder<T>("target_${it.name}", it.shape)
-        }
-    }
-
-    inline fun <reified T> assign(
-        variable: Operand<T>,
-        value: Operand<T>,
-        name: String? = null
-    ): Assign<T> = ops.assign(variable, value, name)
-
-    inline infix fun <reified T> Variable<T>.assignTo(value: Operand<T>): Assign<T> = assign(this, value)
 
     inline fun <T> scope(name: String, init: ModelBuilder.()->T): T =
         ModelBuilder(
@@ -146,35 +176,42 @@ open class ModelBuilder(
             trainableVariableList = trainableVariableList
         ).run(init)
 
-    operator fun <T> Operand<T>.unaryPlus(): Identity<T> = ops.identity(this)
-    operator fun <T> Operand<T>.unaryMinus(): Neg<T> = ops.neg(this)
 
-    operator fun <T> Operand<T>.plus(other: Operand<T>): Add<T> = ops.add(this, other)
-    operator fun <T> Operand<T>.minus(other: Operand<T>): Sub<T> = ops.sub(this, other)
-    operator fun <T> Operand<T>.times(other: Operand<T>): Mul<T> = ops.mul(this, other)
-    operator fun <T> Operand<T>.div(other: Operand<T>): Div<T> = ops.div(this, other)
+    operator fun Operand<*>.unaryPlus(): Identity<*> = ops.identity(this)
+    operator fun Operand<*>.unaryMinus(): Neg<*> = ops.neg(this)
 
-    infix fun <T> Operand<T>.matmul(other: Operand<T>): MatMul<T> = ops.matMul(this, other)
+    operator fun Operand<*>.plus(other: Operand<*>): Add<*> = ops.add(this.asOfAny(), other.asOfAny())
+    operator fun Operand<*>.minus(other: Operand<*>): Sub<*> = ops.sub(this.asOfAny(), other.asOfAny())
+    operator fun Operand<*>.times(other: Operand<*>): Mul<*> = ops.mul(this.asOfAny(), other.asOfAny())
+    operator fun Operand<*>.div(other: Operand<*>): Div<*> = ops.div(this.asOfAny(), other.asOfAny())
 
-    inline fun <reified T: Number> randomNormal(shape: IntArray1D = intArray1DOf()): RandomNormal<T> =
-        ops.randomNormal(constant(shape), T::class.java)
+    infix fun Operand<*>.matmul(other: Operand<*>): MatMul<*> = ops.matMul(this.asOfAny(), other.asOfAny())
 
-    inline fun <reified T: Number> randomNormal(
+
+    fun randomNormal(
+        shape: IntArray1D = intArray1DOf(),
+        dataType: DataType = defaultFloatDataType
+    ): RandomNormal<*> =
+        ops.randomNormal(constant(shape).asOfNumber(), dataType.toClass() as Class<Number>)
+
+
+    fun randomNormal(
         shape: IntArray1D,
         mean: Double = 0.0,
-        deviation: Double = 1.0
-    ): Operand<T> {
+        deviation: Double = 1.0,
+        dataType: DataType = defaultFloatDataType
+    ): Operand<*> {
 
-        var result: Operand<T> = randomNormal<T>(shape)
+        var result: Operand<*> = randomNormal(shape, dataType)
 
         scope("RandomNormal") {
 
             if (deviation != 1.0) {
-                result *= constant(deviation)
+                result *= constant(deviation, dataType)
             }
 
             if (mean != 0.0) {
-                result += constant(mean)
+                result += constant(mean, dataType)
             }
 
         }
@@ -184,15 +221,31 @@ open class ModelBuilder(
 
     // Activations
 
-    fun <T> sigmoid(input: Operand<T>): Sigmoid<T> = ops.sigmoid(input)
-    fun <T: Number> softmax(input: Operand<T>): Softmax<T> = ops.softmax(input)
-    fun <T: Number> relu(input: Operand<T>): Relu<T> = ops.relu(input)
+    fun identity(input: Operand<*>): Operand<*> = ops.identity(input)
 
-    fun <T> square(input: Operand<T>): Square<T> = ops.square(input)
-    fun <T> Operand<T>.squared(): Square<T> = square(this)
+    fun sigmoid(input: Operand<*>): Sigmoid<*> = ops.sigmoid(input)
+    fun softmax(input: Operand<*>): Softmax<*> = ops.softmax(input.asOfNumber())
+    fun relu(input: Operand<*>): Relu<*> = ops.relu(input)
 
-    fun <T, U: Number> mean(input: Operand<T>, axis: Operand<U>): Mean<T> = ops.mean(input, axis)
-    fun <T> mean(input: Operand<T>, axis: Int): Mean<T> = ops.mean(input, constant(axis))
+    fun softmaxCrossEntropyWithLogits(
+        output: Operand<*>,
+        target: Operand<*>
+    ): Operand<*> = ops.softmaxCrossEntropyWithLogits(
+        output.asOfNumber(),
+        target.asOfNumber()
+    ).loss().asOutput()
+
+    fun square(input: Operand<*>): Square<*> = ops.square(input)
+    fun Operand<*>.squared(): Square<*> = square(this)
+
+    fun broadcastTo(input: Operand<*>, shape: Operand<*>): BroadcastTo<*> =
+        ops.broadcastTo(input.asOfAny(), shape.asOfNumber())
+
+    fun mean(input: Operand<*>, axis: Operand<*>): Mean<*> = ops.mean(input, axis.asOfNumber())
+    fun mean(input: Operand<*>, axis: Int): Mean<*> = ops.mean(input, constant(axis).asOfNumber())
+
+    fun reduceMean(input: Operand<*>, axis: Operand<*>): ReduceMean<*> = ops.reduceMean(input, axis.asOfNumber())
+    fun reduceMean(input: Operand<*>, axis: IntArray1D): ReduceMean<*> = ops.reduceMean(input, constant(axis).asOfNumber())
 
     fun group(operations: Iterable<Operand<*>>): Operand<*> = ops.group(operations)
     fun group(vararg operations: Operand<*>): Operand<*> = ops.group(*operations)
@@ -202,22 +255,15 @@ open class ModelBuilder(
 
     fun gradients(value: Operand<*>, vararg wrt: Operand<*>): Gradients = gradients(value, wrt.toList())
     fun gradients(value: List<Operand<*>>, vararg wrt: Operand<*>): Gradients = gradients(value, wrt.toList())
+
     fun gradients(value: Operand<*>, wrtList: List<Operand<*>>, name: String? = null): Gradients =
         ops.withNameOrSame(name).gradients(value, wrtList)
+
     fun gradients(value: List<Operand<*>>, wrtList: List<Operand<*>>, name: String? = null): Gradients =
         ops.withNameOrSame(name).gradients(value, wrtList)
 
 }
 
-inline fun <reified T: Number> Number.cast(): T = when(val clazz = T::class.java) {
-    java.lang.Double::class.java -> toDouble()
-    java.lang.Float::class.java -> toFloat()
-    java.lang.Long::class.java -> toLong()
-    java.lang.Integer::class.java -> toInt()
-    java.lang.Short::class.java -> toShort()
-    java.lang.Character::class.java -> toChar()
-    else -> error(clazz.name)
-} as T
 
 inline fun Graph.withBuilder(init: ModelBuilder.()->Unit) = this.also { ModelBuilder(it).init() }
 

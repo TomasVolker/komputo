@@ -1,4 +1,4 @@
-package tomasvolker.performance
+package tomasvolker.komputo.performance
 
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.index.All

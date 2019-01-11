@@ -3,12 +3,14 @@ package tomasvolker.komputo.dsl.builder
 import org.tensorflow.Graph
 import org.tensorflow.Operand
 import org.tensorflow.op.core.Placeholder
+import tomasvolker.komputo.asOfNumber
+import tomasvolker.numeriko.core.dsl.I
 
 class TrainableModel(
     graph: Graph,
-    inputList: List<Placeholder<*>>,
+    inputList: List<Operand<*>>,
     outputList: List<Operand<*>>,
-    val targetList: List<Placeholder<*>>,
+    val targetList: List<Operand<*>>,
     val loss: Operand<*>,
     val trainOperation: Operand<*>?,
     initializeOperation: Operand<*>? = null
@@ -21,15 +23,19 @@ class TrainableModel(
 
 open class TrainableModelBuilder(graph: Graph): ModelBuilder(graph) {
 
-    var loss: Operand<Float> = constant(0f)
+    var loss: Operand<*> = constant(0.0)
 
     var trainingAlgorithm: TrainingAlgorithm? = null
 
     override fun build(): TrainableModel {
 
-        loss = ops.reduceMean(loss, constant(0))
+        loss = reduceMean(loss, I[0])
 
-        val train = trainingAlgorithm?.buildOperation(this, loss, trainableVariableList)
+        val train = trainingAlgorithm?.buildOperation(
+            this,
+            loss,
+            trainableVariableList
+        )
 
         return TrainableModel(
             graph = graph,

@@ -1,4 +1,4 @@
-package tomasvolker.tensorflow.dsl
+package tomasvolker.komputo.dsl
 
 import org.tensorflow.*
 import tomasvolker.komputo.dsl.builder.Model
@@ -48,8 +48,8 @@ class TrainableModelSession(
         return with(tensorflowSession) {
             compute {
                 for (i in 0 until inputSize) {
-                    feed(model.inputList[i].output(), inputs[i])
-                    feed(model.targetList[i].output(), targets[i])
+                    feed(model.inputList[i].asOutput(), inputs[i])
+                    feed(model.targetList[i].asOutput(), targets[i])
                     fetch(model.loss)
                 }
                 model.trainOperation?.let { addTarget(it) }
@@ -107,7 +107,7 @@ open class ModelSession(
         return with(tensorflowSession) {
             compute {
                 inputList.zip(inputs) { operand, input ->
-                    feed(operand.output(), input)
+                    feed(operand.asOutput(), input)
                 }
                 fetchAll(outputList)
             }

@@ -2,6 +2,7 @@ package tomasvolker.komputo.dsl.builder
 
 import org.tensorflow.Operand
 import org.tensorflow.op.Ops
+import tomasvolker.komputo.dsl.*
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.index.Last
 import tomasvolker.numeriko.core.index.rangeTo
@@ -9,7 +10,6 @@ import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 import tomasvolker.numeriko.core.operations.concatenate
 import tomasvolker.numeriko.core.operations.reduction.product
-import tomasvolker.tensorflow.dsl.*
 
 class SequentialBuilder(
     val builder: ModelBuilder,
@@ -22,9 +22,9 @@ class SequentialBuilder(
     val lastOutput: Operand<*>
         get() = _lastOutput
 
-    val lastShape: IntArray1D get() = lastOutput.shape.toIntArray1D()
+    val lastShape: IntArray1D get() = lastOutput.shape
 
-    fun dense(outputSize: Int, activation: (Operand<Float>)-> Operand<Float> = ops::identity): Operand<*> {
+    fun dense(outputSize: Int, activation: (Operand<*>)-> Operand<*> = builder::identity): Operand<*> {
 
         if (lastShape.rank > 2) error("Dense layer cannot be applied to shape $lastShape")
 
@@ -37,7 +37,7 @@ class SequentialBuilder(
         strides: IntArray1D = I[1, 1],
         filterCount: Int = 1,
         padding: ConvPadding = ConvPadding.SAME,
-        activation: (Operand<Float>)-> Operand<Float> = ops::identity
+        activation: (Operand<*>)-> Operand<*> = builder::identity
     ): Operand<*> {
 
         require(lastShape.size == 4) {

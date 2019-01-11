@@ -8,8 +8,8 @@ import tomasvolker.numeriko.core.index.All
 import tomasvolker.numeriko.core.interfaces.arraynd.double.unsafeGetView
 import tomasvolker.numeriko.core.interfaces.factory.doubleArray2D
 import tomasvolker.numeriko.core.interfaces.factory.nextDoubleArray2D
-import tomasvolker.tensorflow.dsl.toDoubleNDArray
-import tomasvolker.tensorflow.dsl.toTensor
+import tomasvolker.komputo.dsl.toDoubleNDArray
+import tomasvolker.komputo.dsl.toTensor
 import kotlin.random.Random
 
 fun main() {
