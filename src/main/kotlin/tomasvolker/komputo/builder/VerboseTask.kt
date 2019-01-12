@@ -28,7 +28,7 @@ object VerboseTask: TrainingTask {
         lastLine = ""
     }
 
-    override fun beforeTraining(session: TrainingSession) {
+    override fun beforeTraining(session: TrainingContext) {
 
         val parameters = session.parameters
 
@@ -75,7 +75,7 @@ Training on ${parameters.dataset.size} data points for ${parameters.epochs} epoc
         batchLoss.clear()
     }
 
-    override fun afterTraining(session: TrainingSession) {
+    override fun afterTraining(session: TrainingContext) {
         println("Training finished in %.2f seconds".format(trainingTimer.tickSeconds()))
     }
 

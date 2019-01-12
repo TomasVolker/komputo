@@ -1,5 +1,6 @@
 package tomasvolker.komputo.dsl
 
+import org.tensorflow.op.Ops
 import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.asOfNumber
 import tomasvolker.komputo.builder.ModelBuilder
@@ -12,13 +13,8 @@ import kotlin.math.sqrt
 
 fun ModelBuilder.residual(
     input: TFOperand,
-    activation: (linearOutput: TFOperand) -> TFOperand
-): TFOperand = dense(
-    input = input,
-    outputSize = input.shape.last(),
-    activation = activation
-) + input
-
+    function: ModelBuilder.(TFOperand)->TFOperand
+): TFOperand = function(input) + input
 
 interface WeightInitializer {
 
@@ -44,12 +40,19 @@ object Xavier: WeightInitializer {
 
 }
 
+typealias Activation = ModelBuilder.(TFOperand)->TFOperand
+
+val IDENTITY: Activation = { identity(it) }
+val SIGMOID: Activation = { sigmoid(it) }
+val RELU: Activation = { relu(it) }
+val TANH: Activation = { ops.tanh(it) }
+
 fun ModelBuilder.dense(
     input: TFOperand,
     outputSize: Int,
+    activation: Activation? = null,
     initializer: WeightInitializer = Xavier,
-    regularization: ((TFOperand)->TFOperand)? = null,
-    activation: ((TFOperand)-> TFOperand)? = null
+    regularization: ((Ops, TFOperand)->TFOperand)? = null
 ): TFOperand {
 
     var result: TFOperand? = null
@@ -68,7 +71,7 @@ fun ModelBuilder.dense(
         )
 
         regularization?.let {
-            regularize(regularization(w))
+            regularize(regularization(ops, w))
         }
 
         val b = parameter(
@@ -76,14 +79,14 @@ fun ModelBuilder.dense(
             shape = biasesShape,
             initialValue = initializer.initializeValue(this, biasesShape, inputSize, outputSize)
         )
-
+/*
         regularization?.let {
             regularize(regularization(b))
         }
-
+*/
         val linearOutput = (input matmul w) + b
 
-        result = activation?.invoke(linearOutput) ?: linearOutput
+        result = activation?.invoke(this, linearOutput) ?: linearOutput
 
     }
 
@@ -119,7 +122,7 @@ fun ModelBuilder.conv2D(
     stride: IntArray1D = I[1, 1],
     padding: ConvPadding = ConvPadding.SAME,
     initializer: WeightInitializer = Xavier,
-    activation: (linearOutput: TFOperand)-> TFOperand = ::identity
+    activation: Activation = IDENTITY
 ): TFOperand {
 
     var result: TFOperand? = null

@@ -2,6 +2,8 @@ package tomasvolker.komputo.mnist
 
 import tomasvolker.komputo.builder.*
 import tomasvolker.komputo.dataset.mapLabels
+import tomasvolker.komputo.dsl.RELU
+import tomasvolker.komputo.functions.softmax
 import tomasvolker.komputo.performance.argmax
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.interfaces.array1d.double.DoubleArray1D
@@ -25,66 +27,43 @@ fun main() {
     println("train dataset size: ${trainDataset.size}")
     println("test dataset size: ${testDataset.size}")
 
+    val model = trainableModel {
 
-    val model = graphModel {
-
-        val input = input(shape = I[dynamic, 28, 28])
-
-        val logits = sequential(input) {
-
-            reshape(I[28, 28, 1])
-            conv2d(
-                kernelSize = I[3, 3],
-                filterCount = 32,
-                activation = builder::relu
-            )
-            conv2d(
-                kernelSize = I[3, 3],
-                filterCount = 64,
-                activation = builder::relu
-            )
-            maxPool2D(
-                windowSize = I[2, 2],
-                strides = I[1, 1]
-            )
+        sequential(inputShape = I[28, 28]) {
+            conv2d(I[3, 3], filterCount = 16, activation = RELU)
+            conv2d(I[3, 3], filterCount = 16, activation = RELU)
+            conv2d(I[3, 3], filterCount = 16, activation = RELU)
             flatten()
-            dropout(0.25)
-            dense(128,
-                activation = builder::sigmoid
-            )
             dense(10)
-
         }
 
-        output(logits)
-        output(softmax(logits))
+        training {
+            loss = ::crossEntropyWithLogits
+            optimizer = Adagrad()
+        }
 
     }
-
 
     session(model) {
 
         train {
-
             dataset = trainDataset.mapLabels { it.toOneHot(10) }
 
             epochs = 5
             batchSize = 128
 
-            loss = ::crossEntropyWithLogits
-            optimizer = Adagrad()
-
             verbose()
-
         }
 
-        fun classify(image: DoubleArray2D): DoubleArray1D = model(image)[1].as2D()[0, All]
+        fun classify(image: DoubleArray2D): DoubleArray1D =
+            softmax(evaluate(image).first().as2D()[0, All])
 
         val testAccuracy = testDataset.map {
             (classify(it.data).argmax() == it.label).indicative()
         }.average()
 
-        println("Test accuracy: ${testAccuracy * 100}%")
+        println("Test accuracy: %.2f%%".format(testAccuracy * 100))
+
 
     }
 

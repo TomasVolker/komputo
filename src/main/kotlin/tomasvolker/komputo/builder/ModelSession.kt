@@ -6,20 +6,28 @@ import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.dsl.*
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 
-fun session(model: Model, init: ModelSession.()->Unit) {
-    ModelSession(model).use(init)
+fun <M: Model> session(model: M, block: ModelSession<M>.()->Unit) {
+    ModelSession(model).use { session ->
+
+        model.initializeList.forEach {
+            session.execute(it)
+        }
+
+        session.block()
+
+    }
 }
 
-class ModelSession(
-    val model: Model
+class ModelSession<out M: Model>(
+    val model: M
 ): AutoCloseable {
 
     val tensorflowSession = TensorflowSession(Session(model.graph))
 
-    operator fun Model.invoke(vararg inputs: DoubleArrayND): List<DoubleArrayND> =
-        invoke(inputs.toList())
+    fun evaluate(vararg inputs: DoubleArrayND): List<DoubleArrayND> =
+        evaluate(inputs.toList())
 
-    operator fun Model.invoke(
+    fun evaluate(
         inputs: List<DoubleArrayND>
     ): List<DoubleArrayND> =
         evaluate(

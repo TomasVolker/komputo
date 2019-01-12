@@ -17,19 +17,22 @@ import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 import tomasvolker.numeriko.core.operations.concatenate
 
 open class Model(
-    val graph: Graph,
+    val builder: ModelBuilder,
     val inputList: List<TFOperand>,
     val outputList: List<TFOperand>,
     val parameterList: List<TFVariable>,
-    val regularizationList: MutableList<TFOperand> = mutableListOf(),
+    val regularizationList: List<TFOperand> = mutableListOf(),
     val trainingFactor: PlaceholderWithDefault<*>,
-    val initializeOperation: TFOperand? = null
+    val initializeList: List<TFOperand> = emptyList()
 ) {
 
     val inputSize: Int = inputList.size
     val outputSize: Int = outputList.size
 
+    val graph get() = builder.graph
+
 }
+
 
 open class ModelBuilder(
     val ops: Ops,
@@ -65,10 +68,10 @@ open class ModelBuilder(
         SequentialBuilder(this, input).apply(sequence).output
 
     open fun build(): Model = Model(
-        graph = graph,
+        builder = this,
         inputList = inputList,
         outputList = outputList,
-        initializeOperation = group("initialize_variables", initializationList),
+        initializeList = initializationList,
         regularizationList = regularizationList,
         parameterList = parameterList,
         trainingFactor = trainingFactor
@@ -279,6 +282,9 @@ open class ModelBuilder(
 
     fun mean(input: TFOperand, axis: TFOperand): Mean<*> = ops.mean(input, axis.asOfNumber())
     fun mean(input: TFOperand, axis: Int): Mean<*> = ops.mean(input, constant(axis).asOfNumber())
+
+    fun sum(input: TFOperand, axis: Int): Sum<*> = ops.sum(input, constant(axis).asOfNumber())
+    fun sum(input: TFOperand, axis: IntArray1D): Sum<*> = ops.sum(input, constant(axis).asOfNumber())
 
     fun reduceMean(input: TFOperand, axis: TFOperand): ReduceMean<*> = ops.reduceMean(input, axis.asOfNumber())
     fun reduceMean(input: TFOperand, axis: IntArray1D): ReduceMean<*> = ops.reduceMean(input, constant(axis).asOfNumber())
