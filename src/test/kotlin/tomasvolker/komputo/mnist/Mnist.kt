@@ -1,10 +1,11 @@
 package tomasvolker.komputo.mnist
 
+import tomasvolker.komputo.dataset.LabeledData
+import tomasvolker.komputo.dataset.labelTo
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.interfaces.array2d.double.DoubleArray2D
 import tomasvolker.numeriko.core.interfaces.array2d.generic.indices0
 import tomasvolker.numeriko.core.interfaces.array2d.generic.indices1
-import tomasvolker.numeriko.core.interfaces.factory.doubleArray2D
 import tomasvolker.numeriko.core.interfaces.factory.doubleZeros
 import tomasvolker.numeriko.core.interfaces.factory.intArray1D
 import java.io.*
@@ -14,13 +15,6 @@ fun InputStream.data() = DataInputStream(this)
 fun OutputStream.data() = DataOutputStream(this)
 
 inline fun <T :AutoCloseable, R> T.runUsing(block: T.()->R): R = use(block)
-
-data class LabeledData<D, L>(
-    val data: D,
-    val label: L
-)
-
-infix fun <D, L> D.labelTo(label: L) = LabeledData(this, label)
 
 object Mnist {
 

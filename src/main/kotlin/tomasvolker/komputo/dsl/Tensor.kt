@@ -1,6 +1,7 @@
 package tomasvolker.komputo.dsl
 
 import org.tensorflow.Tensor
+import tomasvolker.numeriko.core.implementations.numeriko.array0d.double.NumerikoDoubleArray0D
 import tomasvolker.numeriko.core.implementations.numeriko.array1d.double.NumerikoDoubleArray1D
 import tomasvolker.numeriko.core.implementations.numeriko.array2d.double.NumerikoDoubleArray2D
 import tomasvolker.numeriko.core.implementations.numeriko.arraynd.NumerikoDoubleArrayND
@@ -33,6 +34,10 @@ fun Tensor<*>.toDoubleNDArray(): DoubleArrayND {
 
 // TODO improve numeriko performance
 fun DoubleArrayND.toTensor(): Tensor<*> = when(this) {
+    is NumerikoDoubleArray0D -> Tensor.create(
+        longArrayOf(),
+        FloatBuffer.wrap(floatArrayOf(data.toFloat()))
+    )
     is NumerikoDoubleArray1D -> Tensor.create(
         longArrayOf(size.toLong()),
         FloatBuffer.wrap(

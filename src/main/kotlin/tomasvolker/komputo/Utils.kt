@@ -3,10 +3,18 @@ package tomasvolker.komputo
 import org.tensorflow.DataType
 import org.tensorflow.Operand
 import org.tensorflow.Shape
+import org.tensorflow.op.core.Constant
+import org.tensorflow.op.core.Placeholder
+import org.tensorflow.op.core.Variable
 import org.tensorflow.types.UInt8
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1D
+
+typealias TFOperand = Operand<*>
+typealias TFVariable = Variable<*>
+typealias TFPlaceholder = Placeholder<*>
+typealias TFConstant = Constant<*>
 
 fun DataType.toClass(): Class<*> = when(this) {
     DataType.FLOAT -> java.lang.Float::class.java
@@ -43,13 +51,15 @@ fun Int.castTo(dataType: DataType): Any = when(dataType) {
 fun Shape.toIntArray1D() = intArray1D(numDimensions()) { i -> size(i).toInt() }
 
 fun IntArray1D?.toShape(): Shape =
-    if (this == null)
-        Shape.unknown()
-    else
-        Shape.make(
+    when {
+        this == null -> Shape.unknown()
+        size == 0 -> Shape.scalar()
+        else -> Shape.make(
             this[0].toLong(),
             *this.drop(1).map { it.toLong() }.toLongArray()
         )
+    }
 
-fun Operand<*>.asOfAny(): Operand<Any> = this as Operand<Any>
-fun Operand<*>.asOfNumber(): Operand<Number> = this as Operand<Number>
+
+fun TFOperand.asOfAny(): Operand<Any> = this as Operand<Any>
+fun TFOperand.asOfNumber(): Operand<Number> = this as Operand<Number>

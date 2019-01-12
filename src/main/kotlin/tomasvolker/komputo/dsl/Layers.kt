@@ -1,59 +1,110 @@
 package tomasvolker.komputo.dsl
 
-import org.tensorflow.Operand
-import tomasvolker.komputo.asOfAny
+import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.asOfNumber
-import tomasvolker.komputo.dsl.builder.ModelBuilder
+import tomasvolker.komputo.builder.ModelBuilder
 import tomasvolker.numeriko.core.dsl.I
+import tomasvolker.numeriko.core.index.Last
+import tomasvolker.numeriko.core.index.rangeTo
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.operations.reduction.product
 import kotlin.math.sqrt
 
 fun ModelBuilder.residual(
-    input: Operand<*>,
-    inputSize: Int,
-    activation: (linearOutput: Operand<*>) -> Operand<*>
-): Operand<*> = dense(
+    input: TFOperand,
+    activation: (linearOutput: TFOperand) -> TFOperand
+): TFOperand = dense(
     input = input,
-    inputSize = inputSize,
-    outputSize = inputSize,
+    outputSize = input.shape.last(),
     activation = activation
 ) + input
 
+
+interface WeightInitializer {
+
+    fun initializeValue(
+        builder: ModelBuilder,
+        shape: IntArray1D,
+        inputSize: Int,
+        outputSize: Int
+    ): TFOperand
+
+}
+
+object Xavier: WeightInitializer {
+
+    override fun initializeValue(
+        builder: ModelBuilder,
+        shape: IntArray1D,
+        inputSize: Int,
+        outputSize: Int
+    ): TFOperand {
+        return builder.randomNormal(shape, deviation = sqrt(1.0 / inputSize))
+    }
+
+}
+
 fun ModelBuilder.dense(
-    input: Operand<*>,
-    inputSize: Int,
+    input: TFOperand,
     outputSize: Int,
-    activation: (linearOutput: Operand<*>)-> Operand<*> = ::identity
-): Operand<*> {
+    initializer: WeightInitializer = Xavier,
+    regularization: ((TFOperand)->TFOperand)? = null,
+    activation: ((TFOperand)-> TFOperand)? = null
+): TFOperand {
 
-    var result: Operand<*>? = null
+    var result: TFOperand? = null
 
+    val inputSize = input.shape[Last]
+    
     scope("dense_layer") {
 
         val weightsShape = I[inputSize, outputSize]
         val biasesShape = I[1, outputSize]
-
-        // Xavier
-        val elementInputSize = inputSize
-
-        val w = variable(
+        
+        val w = parameter(
             name = "weightMatrix",
             shape = weightsShape,
-            initialValue = randomNormal(weightsShape, deviation = sqrt(1.0 / elementInputSize))
+            initialValue = initializer.initializeValue(this, weightsShape, inputSize, outputSize)
         )
 
-        val b = variable(
+        regularization?.let {
+            regularize(regularization(w))
+        }
+
+        val b = parameter(
             name = "biasVector",
             shape = biasesShape,
-            initialValue = randomNormal(biasesShape, deviation = sqrt(1.0 / elementInputSize))
+            initialValue = initializer.initializeValue(this, biasesShape, inputSize, outputSize)
         )
 
-        result = activation((input matmul w) + b)
+        regularization?.let {
+            regularize(regularization(b))
+        }
+
+        val linearOutput = (input matmul w) + b
+
+        result = activation?.invoke(linearOutput) ?: linearOutput
 
     }
 
     return result ?: error("")
+}
+
+
+fun ModelBuilder.dropout(
+    input: TFOperand,
+    keepProbability: Double
+): TFOperand {
+
+    require(keepProbability in 0.0..1.0) {
+        "keepProbability must be between 0 and 1 ($keepProbability)"
+    }
+
+    val probability = trainingFactor * (keepProbability - 1.0) + 1.0 // When training
+
+    val mask = floor(randomUniform(input.shape[1..Last]) + probability)
+
+    return input * mask / probability
 }
 
 enum class ConvPadding {
@@ -62,15 +113,16 @@ enum class ConvPadding {
 }
 
 fun ModelBuilder.conv2D(
-    input: Operand<*>,
+    input: TFOperand,
     kernelSize: IntArray1D,
     filterCount: Int = 1,
     stride: IntArray1D = I[1, 1],
     padding: ConvPadding = ConvPadding.SAME,
-    activation: (linearOutput: Operand<*>)-> Operand<*> = ::identity
-): Operand<*> {
+    initializer: WeightInitializer = Xavier,
+    activation: (linearOutput: TFOperand)-> TFOperand = ::identity
+): TFOperand {
 
-    var result: Operand<*>? = null
+    var result: TFOperand? = null
 
     val inputShape = input.shape
 
@@ -81,11 +133,10 @@ fun ModelBuilder.conv2D(
         // Xavier
         val elementInputSize = filterShape[0..2].product()
 
-        val filter = variable(
+        val filter = parameter(
             name = "filter",
             shape = filterShape,
-            initialValue = randomNormal(filterShape, deviation = sqrt(1.0 / elementInputSize)),
-            trainable = true
+            initialValue = initializer.initializeValue(this, filterShape, elementInputSize, elementInputSize)
         )
 
         result = activation(

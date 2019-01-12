@@ -21,6 +21,14 @@ val Ops.lastIndex: Int get() = -1
 val Ops.dynamic: Int get() = -1
 
 
+fun Ops.placeholderWithDefault(
+    default: TFOperand,
+    shape: IntArray1D? = null,
+    name: String? = null
+): PlaceholderWithDefault<*> =
+    withNameOrSame(name).placeholderWithDefault(default, shape.toShape())
+
+
 fun Ops.placeholder(
     dtype: DataType,
     name: String? = null,
@@ -39,7 +47,7 @@ fun Ops.variable(
 
 fun Ops.assign(
     variable: Variable<*>,
-    value: Operand<*>,
+    value: TFOperand,
     name: String? = null
 ): Assign<*> =
     withNameOrSame(name).assign(variable.asOfAny(), value.asOfAny())
@@ -82,13 +90,13 @@ fun Ops.constant(
 
 
 fun Ops.gradientDescent(
-    cost: Operand<*>,
+    cost: TFOperand,
     variableList: List<Variable<*>>,
     rate: Double,
     dataType: DataType
-): Operand<*> {
+): TFOperand {
 
-    var result: List<Operand<*>>? = null
+    var result: List<TFOperand>? = null
 
     scope("gradient_descent") {
 
@@ -121,25 +129,37 @@ fun Ops.randomNormal(
     dataType: DataType
 ): RandomNormal<*> =
     randomNormal<Number, Number>(
-        constant(shape, dataType).asOfNumber(),
+        constant(shape).asOfNumber(),
         dataType.toClass() as Class<Number>
     )
 
 
-fun Ops.reshape(operand: Operand<*>, shape: IntArray1D): Reshape<*> =
+fun Ops.randomUniform(
+    shape: IntArray1D,
+    dataType: DataType
+): RandomUniform<*> =
+    randomUniform<Number, Number>(
+        constant(shape).asOfNumber(),
+        dataType.toClass() as Class<Number>
+    )
+
+
+
+
+fun Ops.reshape(operand: TFOperand, shape: IntArray1D): Reshape<*> =
     reshape(operand.asOfAny(), constant(shape).asOfNumber())
 
 
-fun Ops.group(vararg operands: Operand<*>): Operand<*> =
+fun Ops.group(vararg operands: TFOperand): TFOperand =
     group(operands.toList())
 
-fun Ops.group(operands: Iterable<Operand<*>>): Operand<*> =
+fun Ops.group(operands: Iterable<TFOperand>): TFOperand =
         group("Group", operands)
 
-fun Ops.group(name: String, vararg operands: Operand<*>): Operand<*> =
+fun Ops.group(name: String, vararg operands: TFOperand): TFOperand =
         group(name, operands.toList())
 
-fun Ops.group(name: String, operands: Iterable<Operand<*>>): Operand<*> =
+fun Ops.group(name: String, operands: Iterable<TFOperand>): TFOperand =
     buildOp("NoOp", name = scope().makeOpName(name)) {
         operands.forEach {
             addControlInput(it.asOutput().op())
@@ -147,6 +167,10 @@ fun Ops.group(name: String, operands: Iterable<Operand<*>>): Operand<*> =
     }.output<Any>(0)
 
 
-fun Ops.noOperation(name: String? = null): Operand<*> =
-    buildOp("NoOp", name = scope().makeOpName(name)).output<Any>(0)
+fun Ops.noOperation(name: String? = null): TFOperand =
+    buildOp("NoOp", name = scope().makeOpName(name ?: "NoOp")).output<Any>(0)
+
+
+fun Ops.broadcastTo(input: TFOperand, shape: IntArray1D, name: String? = null): TFOperand =
+    withNameOrSame(name).broadcastTo(input, constant(shape).asOfNumber())
 

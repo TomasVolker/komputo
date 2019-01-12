@@ -1,39 +1,14 @@
 package tomasvolker.komputo.mnist
 
-import tomasvolker.komputo.dsl.builder.*
-import tomasvolker.komputo.dsl.trainSession
-import tomasvolker.kyplot.dsl.line
-import tomasvolker.kyplot.dsl.showPlot
-import tomasvolker.kyplot.dsl.xAxis
-import tomasvolker.kyplot.dsl.yAxis
-import tomasvolker.kyplot.model.Axis
+import tomasvolker.komputo.builder.*
+import tomasvolker.komputo.dataset.mapLabels
+import tomasvolker.komputo.performance.argmax
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.interfaces.array1d.double.DoubleArray1D
 import tomasvolker.numeriko.core.interfaces.factory.doubleArray1D
-import tomasvolker.numeriko.core.operations.stack
 import tomasvolker.numeriko.core.primitives.indicative
-import tomasvolker.komputo.performance.reduceArgmax
-import tomasvolker.komputo.performance.stack
-import kotlin.system.measureTimeMillis
-
-var lastLine = ""
-
-fun renderLine(line: String) {
-    clearLine()
-    print(line)
-    lastLine = line
-
-}
-
-fun clearLine() {
-    print("\b".repeat(lastLine.length))
-    lastLine = ""
-}
-
-fun nextLine() {
-    println()
-    lastLine = ""
-}
+import tomasvolker.numeriko.core.index.All
+import tomasvolker.numeriko.core.interfaces.array2d.double.DoubleArray2D
 
 fun main() {
 
@@ -50,125 +25,81 @@ fun main() {
     println("train dataset size: ${trainDataset.size}")
     println("test dataset size: ${testDataset.size}")
 
-    val model = trainableModel {
+
+    val model = graphModel {
 
         val input = input(shape = I[dynamic, 28, 28])
 
-        val model = sequential(input) {
-
-            /*
-            flatten()
-            dense(512, activation = ops::relu)
-            dense(10, activation = ops::identity)
-            */
+        val logits = sequential(input) {
 
             reshape(I[28, 28, 1])
             conv2d(
                 kernelSize = I[3, 3],
                 filterCount = 32,
-                activation = ::relu
+                activation = builder::relu
             )
             conv2d(
                 kernelSize = I[3, 3],
                 filterCount = 64,
-                activation = ::relu
+                activation = builder::relu
             )
             maxPool2D(
                 windowSize = I[2, 2],
                 strides = I[1, 1]
             )
             flatten()
-            dense(128, activation = ::sigmoid)
-            dense(10, activation = ::identity)
-
-
-        }
-
-        output(model)
-
-        loss = softmaxCrossEntropyWithLogits(output, target)
-
-        trainingAlgorithm = Adagrad()
-    }
-
-    val epochLosses = mutableListOf<Double>()
-
-    trainSession(model) {
-
-        model.initialize()
-
-        val millis = measureTimeMillis {
-
-            val batchSize = 128
-
-            repeat(5) { epoch ->
-
-                println("Epoch $epoch")
-
-                val batchList = trainDataset.shuffled().chunked(batchSize)
-
-                val losses = batchList.withIndex().map { (i, batch) ->
-
-                    val inputTensor = stack(batch.map { it.data })
-                    val output = stack(batch.map { it.label.toOneHot(10) })
-
-                    model.fit(inputTensor, output).first().getValue().also {
-                        renderLine("Batch loss ${i * batchSize}/${trainDataset.size}: $it")
-                    }
-                }
-
-                clearLine()
-
-                println("Mean loss: ${losses.average().also { epochLosses.add(it) }}")
-
-                val testBatch = List(10) { trainDataset.random() }
-
-                val inputTensor = stack(testBatch.map { it.data })
-                val predictions = model(inputTensor).first()
-
-                val predictedLabels = predictions.as2D().reduceArgmax(1)
-                testBatch.zip(predictedLabels) { data, predictedLabel ->
-                    "${data.label} -> $predictedLabel"
-                }.joinToString(separator = " | ").also { println(it) }
-
-            }
+            dropout(0.25)
+            dense(128,
+                activation = builder::sigmoid
+            )
+            dense(10)
 
         }
 
-        println("seconds: ${millis / 1000.0}")
-
-        repeat(5) {
-
-            val (image, label) = testDataset.random()
-
-            val predicted = model(image.higherRank()).first().as2D().reduceArgmax(1)
-
-            print(Mnist.renderToString(image))
-            println("predicted: $predicted, label: $label")
-        }
+        output(logits)
+        output(softmax(logits))
 
     }
 
-    showPlot {
 
-        line {
-            x = epochLosses.indices
-            y = epochLosses
-            label = "Epoch losses"
+    session(model) {
+
+        train {
+
+            dataset = trainDataset.mapLabels { it.toOneHot(10) }
+
+            epochs = 5
+            batchSize = 128
+
+            loss = ::crossEntropyWithLogits
+            optimizer = Adagrad()
+
+            verbose()
+
         }
 
-        yAxis {
-            label = "Loss"
-            scale = Axis.Scale.LOGARITHMIC
-        }
+        fun classify(image: DoubleArray2D): DoubleArray1D = model(image)[1].as2D()[0, All]
 
-        xAxis {
-            label = "Epoch"
-        }
+        val testAccuracy = testDataset.map {
+            (classify(it.data).argmax() == it.label).indicative()
+        }.average()
+
+        println("Test accuracy: ${testAccuracy * 100}%")
 
     }
 
 }
 
+fun highestPredictionsString(probabilities: DoubleArray1D) =
+    probabilities.toList()
+        .withIndex()
+        .sortedByDescending { it.value }
+        .take(3)
+        .joinToString(prefix = "{", postfix = "}") { "%d:%.2f%%".format(it.index, it.value*100) }
+
+
 fun Int.toOneHot(size: Int): DoubleArray1D =
     doubleArray1D(size) { i -> (i == this).indicative() }
+
+
+

@@ -2,7 +2,7 @@ package tomasvolker.komputo.dsl
 
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
-
+/*
 open class Activation
 
 object Sigmoid: Activation()
@@ -79,4 +79,4 @@ fun main() {
     }
 
 
-}
+}*/

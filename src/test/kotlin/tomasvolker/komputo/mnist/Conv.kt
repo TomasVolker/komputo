@@ -1,17 +1,6 @@
 package tomasvolker.komputo.mnist
 
-import org.tensorflow.Operand
-import tomasvolker.komputo.dsl.builder.*
-import tomasvolker.komputo.dsl.trainSession
-import tomasvolker.kyplot.dsl.*
-import tomasvolker.kyplot.model.Axis
-import tomasvolker.numeriko.core.dsl.I
-import tomasvolker.numeriko.core.index.All
-import tomasvolker.numeriko.core.interfaces.arraynd.double.unsafeGetView
-import tomasvolker.komputo.performance.stack
-import kotlin.system.measureTimeMillis
-
-
+/*
 fun main() {
 
     val trainDataset = Mnist.loadDataset(
@@ -124,3 +113,4 @@ fun main() {
     }
 
 }
+*/
