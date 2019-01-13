@@ -1,6 +1,7 @@
 package tomasvolker.komputo.mnist
 
 import tomasvolker.komputo.builder.*
+import tomasvolker.komputo.dataset.LabeledDataset
 import tomasvolker.komputo.dataset.mapLabels
 import tomasvolker.komputo.dsl.RELU
 import tomasvolker.komputo.functions.softmax
@@ -14,15 +15,7 @@ import tomasvolker.numeriko.core.interfaces.array2d.double.DoubleArray2D
 
 fun main() {
 
-    val trainDataset = Mnist.loadDataset(
-        imagesPath = "data/train-images-idx3-ubyte",
-        labelsPath = "data/train-labels-idx1-ubyte"
-    )
-
-    val testDataset = Mnist.loadDataset(
-        imagesPath = "data/t10k-images-idx3-ubyte",
-        labelsPath = "data/t10k-labels-idx1-ubyte"
-    )
+    val (trainDataset, testDataset) = loadMnistDataset()
 
     println("train dataset size: ${trainDataset.size}")
     println("test dataset size: ${testDataset.size}")
@@ -30,15 +23,13 @@ fun main() {
     val model = trainableModel {
 
         sequential(inputShape = I[28, 28]) {
-            conv2d(I[3, 3], filterCount = 16, activation = RELU)
-            conv2d(I[3, 3], filterCount = 16, activation = RELU)
-            conv2d(I[3, 3], filterCount = 16, activation = RELU)
             flatten()
+            dense(512, activation = RELU)
             dense(10)
         }
 
         training {
-            loss = ::crossEntropyWithLogits
+            loss = crossEntropyWithLogits
             optimizer = Adagrad()
         }
 
@@ -47,12 +38,14 @@ fun main() {
     session(model) {
 
         train {
+
             dataset = trainDataset.mapLabels { it.toOneHot(10) }
 
             epochs = 5
             batchSize = 128
 
             verbose()
+
         }
 
         fun classify(image: DoubleArray2D): DoubleArray1D =
@@ -63,7 +56,6 @@ fun main() {
         }.average()
 
         println("Test accuracy: %.2f%%".format(testAccuracy * 100))
-
 
     }
 
@@ -82,3 +74,17 @@ fun Int.toOneHot(size: Int): DoubleArray1D =
 
 
 
+typealias MnistDataset = LabeledDataset<DoubleArray2D, Int>
+
+fun loadMnistDataset(): Pair<MnistDataset, MnistDataset> {
+    val trainDataset = Mnist.loadDataset(
+        imagesPath = "data/train-images-idx3-ubyte",
+        labelsPath = "data/train-labels-idx1-ubyte"
+    )
+
+    val testDataset = Mnist.loadDataset(
+        imagesPath = "data/t10k-images-idx3-ubyte",
+        labelsPath = "data/t10k-labels-idx1-ubyte"
+    )
+    return trainDataset to testDataset
+}

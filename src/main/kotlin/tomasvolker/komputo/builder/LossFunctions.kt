@@ -1,32 +1,27 @@
 package tomasvolker.komputo.builder
 
-import org.tensorflow.op.Ops
 import tomasvolker.komputo.TFOperand
-import tomasvolker.komputo.asOfNumber
-import tomasvolker.komputo.dsl.constant
+import tomasvolker.komputo.dsl.shape
 import tomasvolker.numeriko.core.dsl.I
 
-fun meanSquareError(ops: Ops, output: TFOperand, target: TFOperand): TFOperand {
-    return with(ops) {
-        reduceMean(
-            square(
-                sub(
-                    target.asOfNumber(), output.asOfNumber()
-                )
-            ),
-            constant(I[0, 1]).asOfNumber()
-        )
-    }
+interface LossFunction {
+
+    fun buildOperations(builder: ModelBuilder, output: TFOperand, target: TFOperand): TFOperand
+
 }
 
-fun crossEntropyWithLogits(ops: Ops, output: TFOperand, target: TFOperand): TFOperand {
-    return with(ops) {
-        reduceMean(
-            softmaxCrossEntropyWithLogits(
-                output.asOfNumber(),
-                target.asOfNumber()
-            ).loss(),
-            constant(I[0]).asOfNumber()
-        )
+fun loss(function: ModelBuilder.(output: TFOperand, target: TFOperand)->TFOperand) =
+    object : LossFunction {
+        override fun buildOperations(builder: ModelBuilder, output: TFOperand, target: TFOperand) =
+                builder.function(output, target)
     }
+
+val meanSquareError = loss { output, target ->
+    reduceMean(square(target - output), I[0, 1])
 }
+
+val crossEntropyWithLogits = loss { output, target ->
+    reduceMean(softmaxCrossEntropyWithLogits(output, target), I[0])
+}
+
+val meanAbsoluteError = loss { output, target -> reduceMean(abs(target - output), I[0, 1]) }

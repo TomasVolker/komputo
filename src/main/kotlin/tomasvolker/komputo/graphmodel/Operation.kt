@@ -10,28 +10,24 @@ import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 
 class Input(
-    override val scope: Scope,
     override val name: String,
     override val shape: IntArray1D,
     override val type: DataType
 ): ComputationGraph.Expression
 
 class Variable(
-    override val scope: Scope,
     override val name: String,
     override val shape: IntArray1D,
     override val type: DataType
 ): ComputationGraph.Expression
 
 class Assign(
-    override val scope: Scope,
     override val name: String,
     val variable: Variable,
     val value: ComputationGraph.Expression
 ): ComputationGraph.Node
 
 class RealConstant(
-    override val scope: Scope,
     override val name: String,
     val value: DoubleArrayND,
     override val type: DataType
@@ -43,7 +39,6 @@ class RealConstant(
 }
 
 class Add(
-    override val scope: Scope,
     override val name: String,
     val input1: ComputationGraph.Expression,
     val input2: ComputationGraph.Expression
@@ -79,11 +74,7 @@ class ComputationGraph(
 ) {
 
     interface Node {
-
         val name: String
-
-        val scope: Scope
-
     }
 
     interface Expression: Node {
@@ -103,14 +94,15 @@ class ComputationGraphBuilder(
         name: String,
         shape: IntArray1D = intArray1DOf()
     ): Variable = Variable(
-        scope,
+        name,
         shape,
         DataType.FLOAT
     ).also { nodeList += it }
 
     fun floatConstant(
+        name: String,
         value: DoubleArrayND
-    ): RealConstant = RealConstant(value, DataType.FLOAT).also { nodeList += it }
+    ): RealConstant = RealConstant(name, value, DataType.FLOAT).also { nodeList += it }
 
     operator fun ComputationGraph.Expression.plus(
         other: ComputationGraph.Expression

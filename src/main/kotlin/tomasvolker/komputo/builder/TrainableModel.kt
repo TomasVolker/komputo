@@ -42,7 +42,7 @@ fun trainableModel(init: TrainableModelBuilder.()->Unit) =
 class TrainableModelBuilder{
 
     var model: Model? = null
-    var loss: (Ops, TFOperand, TFOperand)->TFOperand = ::meanSquareError
+    var loss: LossFunction = meanSquareError
     var optimizer: Optimizer = GradientDescent(1.0)
 
     var regularize: Boolean = true
@@ -84,8 +84,8 @@ class TrainableModelBuilder{
 
             scope("optimizer") {
 
-                lossOperation = loss(
-                    ops,
+                lossOperation = loss.buildOperations(
+                    this,
                     model.outputList.first(),
                     targetList.first()
                 )
@@ -95,14 +95,11 @@ class TrainableModelBuilder{
                 else
                     costOperation = lossOperation + regularizationList.reduce { acc, op -> acc + op }
 
-                val optimizerOperations = optimizer.buildOperations(
-                    ops,
+                optimize = optimizer.buildOperations(
+                    this,
                     costOperation,
                     model.parameterList
                 )
-
-                initializationList += optimizerOperations.initialize
-                optimize = optimizerOperations.optimize
             }
 
 

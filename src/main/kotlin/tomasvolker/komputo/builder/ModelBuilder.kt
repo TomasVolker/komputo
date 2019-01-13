@@ -275,6 +275,8 @@ open class ModelBuilder(
     fun square(input: TFOperand): Square<*> = ops.square(input)
     fun TFOperand.squared(): Square<*> = square(this)
 
+    fun abs(input: TFOperand): Abs<*> = ops.abs(input.asOfNumber())
+
     fun floor(input: TFOperand): Floor<*> = ops.floor(input.asOfNumber())
 
     fun broadcastTo(input: TFOperand, shape: TFOperand): BroadcastTo<*> =

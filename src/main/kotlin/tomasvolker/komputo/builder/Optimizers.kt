@@ -1,86 +1,75 @@
 package tomasvolker.komputo.builder
 
-import org.tensorflow.DataType
-import org.tensorflow.op.Ops
+
 import org.tensorflow.op.core.Gradients
 import org.tensorflow.op.core.Variable
 import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.asOfAny
 import tomasvolker.komputo.dsl.*
-import tomasvolker.numeriko.core.dsl.I
 
-fun ModelBuilder.meanSquareError(output: TFOperand, target: TFOperand): TFOperand =
-    reduceMean(square(target - output), constant(I[0, 1]))
 
-data class OptimizerOperations(
-    val initialize: TFOperand,
-    val optimize: TFOperand
-)
 
 interface Optimizer {
 
     fun buildOperations(
-        ops: Ops,
+        builder: ModelBuilder,
         loss: TFOperand,
         parameterList: List<Variable<*>>
-    ): OptimizerOperations
+    ): TFOperand
 
 }
 
 abstract class GradientAlgorithm: Optimizer {
 
     override fun buildOperations(
-        ops: Ops,
+        builder: ModelBuilder,
         loss: TFOperand,
         parameterList: List<Variable<*>>
-    ): OptimizerOperations {
+    ): TFOperand {
 
-        with(ops) {
+        with(builder) {
 
-            var result: List<OptimizerOperations>? = null
+            var result: List<TFOperand>? = null
 
-            scope("gradient_descent") {
+            scope("gradient") {
 
                 val grad = gradients(loss, parameterList)
 
-                result = buildUpdateOperations(ops, parameterList, grad)
+                result = buildUpdateOperations(builder, parameterList, grad)
 
             }
 
-            return OptimizerOperations(
-                initialize = ops.withName("initialize_optimizer").group(result?.map { it.initialize } ?: error("")),
-                optimize = ops.withName("optimize").group(result?.map { it.optimize } ?: error(""))
-            )
+            scope("optmizer") {
+                return group("optimize", result ?: error(""))
+            }
+
         }
 
     }
 
     abstract fun buildUpdateOperations(
-        ops: Ops,
+        builder: ModelBuilder,
         parameterList: List<Variable<*>>,
         gradients: Gradients
-    ): List<OptimizerOperations>
+    ): List<TFOperand>
 
 }
 
 class GradientDescent(val rate: Double): GradientAlgorithm() {
 
     override fun buildUpdateOperations(
-        ops: Ops,
+        builder: ModelBuilder,
         parameterList: List<Variable<*>>,
         gradients: Gradients
-    ): List<OptimizerOperations> {
-        with(ops) {
-            val rate = constant(rate.toFloat())
+    ): List<TFOperand> {
+        with(builder) {
+            val rate = constant(rate)
 
             return parameterList.mapIndexed { i, parameter ->
-                OptimizerOperations(
-                    initialize = ops.noOperation(),
-                    optimize = ops.applyGradientDescent(
-                        parameter.asOfAny(),
-                        rate.asOfAny(),
-                        gradients.dy(i)
-                    )
+                ops.applyGradientDescent(
+                    parameter.asOfAny(),
+                    rate.asOfAny(),
+                    gradients.dy(i)
                 )
             }
         }
@@ -94,36 +83,31 @@ class Momentum(
 ): GradientAlgorithm() {
 
     override fun buildUpdateOperations(
-        ops: Ops,
+        builder: ModelBuilder,
         parameterList: List<Variable<*>>,
         gradients: Gradients
-    ): List<OptimizerOperations> {
-        with(ops) {
-            val rate = ops.constant(rate.toFloat())
-            val momentum = ops.constant(momentum.toFloat())
+    ): List<TFOperand> {
+        with(builder) {
+            val rate = constant(rate)
+            val momentum = constant(momentum)
 
             return parameterList.mapIndexed { i, parameter ->
 
                 val parameterShape = parameter.shape
 
-
                 val accumulator = variable(
-                    DataType.FLOAT,
                     "${parameter.localName}_accumulator",
-                    shape = parameterShape
+                    shape = parameterShape,
+                    dataType = defaultFloatDataType,
+                    initialValue = broadcastTo(constant(0.0), constant(parameterShape))
                 )
 
-                val optimize = ops.applyMomentum(
+                ops.applyMomentum(
                     parameter.asOfAny(),
                     accumulator.asOfAny(),
                     rate.asOfAny(),
                     gradients.dy(i),
                     momentum.asOfAny()
-                )
-
-                OptimizerOperations(
-                    initialize = assign(accumulator, broadcastTo(constant(0.0f), parameterShape)),
-                    optimize = optimize
                 )
             }
         }
@@ -138,33 +122,29 @@ class Adagrad(
 ): GradientAlgorithm() {
 
     override fun buildUpdateOperations(
-        ops: Ops,
+        builder: ModelBuilder,
         parameterList: List<Variable<*>>,
         gradients: Gradients
-    ): List<OptimizerOperations> {
-        with(ops) {
-            val rate = constant(rate.toFloat())
+    ): List<TFOperand> {
+        with(builder) {
+            val rate = constant(rate)
 
             return parameterList.mapIndexed { i, parameter ->
 
                 val parameterShape = parameter.shape
 
                 val accumulator = variable(
-                    DataType.FLOAT,
                     "${parameter.localName}_accumulator",
-                    shape = parameterShape
+                    shape = parameterShape,
+                    dataType = defaultFloatDataType,
+                    initialValue = broadcastTo(constant(epsilon), constant(parameterShape))
                 )
 
-                val optimize = ops.applyAdagrad(
+                ops.applyAdagrad(
                     parameter.asOfAny(),
                     accumulator.asOfAny(),
                     rate.asOfAny(),
                     gradients.dy(i)
-                )
-
-                OptimizerOperations(
-                    initialize = assign(accumulator, broadcastTo(constant(epsilon.toFloat()), parameterShape)),
-                    optimize = optimize
                 )
             }
         }
