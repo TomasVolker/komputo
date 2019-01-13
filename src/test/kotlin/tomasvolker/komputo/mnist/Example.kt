@@ -35,8 +35,8 @@ fun main() {
 
     }
 
-    session(model) {
-
+    session(model, initialize = false) {
+/*
         train {
 
             dataset = trainDataset.mapLabels { it.toOneHot(10) }
@@ -47,6 +47,8 @@ fun main() {
             verbose()
 
         }
+*/
+        restore("test_save.pb")
 
         fun classify(image: DoubleArray2D): DoubleArray1D =
             softmax(evaluate(image).first().as2D()[0, All])

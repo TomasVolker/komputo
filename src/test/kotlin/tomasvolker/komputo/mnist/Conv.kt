@@ -40,7 +40,7 @@ fun main() {
 
         output(model)
 
-        loss = meanSquareError(output, target)
+        metric = meanSquareError(output, target)
 
         trainingAlgorithm = Adagrad()
     }
@@ -83,7 +83,7 @@ fun main() {
                     println(Mnist.renderToString(output))
                 }
 
-                println("Mean loss: ${losses.average().also { epochLosses.add(it) }}")
+                println("Mean metric: ${losses.average().also { epochLosses.add(it) }}")
 
             }
 

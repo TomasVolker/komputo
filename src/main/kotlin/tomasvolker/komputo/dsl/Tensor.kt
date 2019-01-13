@@ -2,10 +2,14 @@ package tomasvolker.komputo.dsl
 
 import org.tensorflow.Tensor
 import tomasvolker.numeriko.core.implementations.numeriko.array0d.double.NumerikoDoubleArray0D
+import tomasvolker.numeriko.core.implementations.numeriko.array0d.generic.NumerikoArray0D
 import tomasvolker.numeriko.core.implementations.numeriko.array1d.double.NumerikoDoubleArray1D
+import tomasvolker.numeriko.core.implementations.numeriko.array1d.generic.NumerikoArray1D
 import tomasvolker.numeriko.core.implementations.numeriko.array2d.double.NumerikoDoubleArray2D
+import tomasvolker.numeriko.core.implementations.numeriko.arraynd.NumerikoArrayND
 import tomasvolker.numeriko.core.implementations.numeriko.arraynd.NumerikoDoubleArrayND
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
+import tomasvolker.numeriko.core.interfaces.arraynd.generic.ArrayND
 import tomasvolker.numeriko.core.interfaces.factory.*
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
@@ -31,6 +35,28 @@ fun Tensor<*>.toDoubleNDArray(): DoubleArrayND {
         }
     }
 }
+
+
+fun ArrayND<*>.toTensor(): Tensor<*> = when(this) {
+    is DoubleArrayND -> toTensor()
+    is NumerikoArray1D<*> -> {
+
+        if (first() is String) {
+            this as NumerikoArray1D<String>
+            Tensor.create(data.map { it.toByteArray(Charsets.US_ASCII) })
+        } else
+            TODO("unsupported")
+    }
+    is NumerikoArray0D<*> -> {
+        val value = getValue()
+        if (value is String) {
+            Tensor.create(value.toByteArray(Charsets.US_ASCII))
+        } else
+            TODO("unsupported")
+    }
+    else -> TODO("unsupported")
+}
+
 
 // TODO improve numeriko performance
 fun DoubleArrayND.toTensor(): Tensor<*> = when(this) {

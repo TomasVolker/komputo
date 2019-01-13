@@ -1,6 +1,7 @@
 package tomasvolker.komputo.builder
 
 import org.tensorflow.*
+import org.tensorflow.op.Operands
 import org.tensorflow.op.Ops
 import org.tensorflow.op.Scope
 import org.tensorflow.op.core.*
@@ -15,12 +16,14 @@ import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 import tomasvolker.numeriko.core.operations.concatenate
+import java.nio.charset.Charset
 
 open class Model(
     val builder: ModelBuilder,
     val inputList: List<TFOperand>,
     val outputList: List<TFOperand>,
     val parameterList: List<TFVariable>,
+    val variableList: List<TFVariable>,
     val regularizationList: List<TFOperand> = mutableListOf(),
     val trainingFactor: PlaceholderWithDefault<*>,
     val initializeList: List<TFOperand> = emptyList()
@@ -40,6 +43,7 @@ open class ModelBuilder(
     val inputList: MutableList<Placeholder<*>> = mutableListOf(),
     val outputList: MutableList<TFOperand> = mutableListOf(),
     val parameterList: MutableList<Variable<*>> = mutableListOf(),
+    val variableList: MutableList<TFVariable> = mutableListOf(),
     val regularizationList: MutableList<TFOperand> = mutableListOf(),
     val trainingFactor: PlaceholderWithDefault<*> =
         ops.placeholderWithDefault(ops.constant(0.0f), intArray1DOf(), name = "training_factor")
@@ -74,11 +78,21 @@ open class ModelBuilder(
         initializeList = initializationList,
         regularizationList = regularizationList,
         parameterList = parameterList,
+        variableList = variableList,
         trainingFactor = trainingFactor
     )
 
     val lastIndex: Int get() = -1
     val dynamic: Int get() = -1
+
+
+    fun placeholderWithDefault(
+        default: TFOperand,
+        shape: IntArray1D? = null,
+        name: String? = null
+    ): PlaceholderWithDefault<*> =
+        ops.placeholderWithDefault(default, shape, name)
+
 
 
     fun placeholder(
@@ -110,6 +124,14 @@ open class ModelBuilder(
         data: DoubleArrayND,
         dataType: DataType = defaultFloatDataType
     ): Constant<*> = ops.constant(data, dataType)
+
+    fun constant(
+        data: List<String>
+    ): Constant<*> = ops.constant(data.map { it.toByteArray(Charsets.US_ASCII) }.toTypedArray(), DataType.STRING.toClass())
+
+    fun constant(
+        data: String
+    ): Constant<*> = ops.constant(data.toByteArray(Charsets.US_ASCII), DataType.STRING.toClass())
 
     fun constant(
         data: Int,
@@ -150,6 +172,7 @@ open class ModelBuilder(
         shape: IntArray1D? = null,
         dataType: DataType = initialValue?.dataType ?: defaultDataType
     ): Variable<*> = ops.variable(dataType, name, shape).also { variable ->
+        variableList += variable
         initialValue?.let {
             initializationList += assign(variable, it, name = "${variable.localName}_init")
         } ?: Unit
@@ -161,14 +184,10 @@ open class ModelBuilder(
         shape: IntArray1D? = null,
         dataType: DataType = initialValue?.dataType ?: defaultDataType,
         trainable: Boolean = true
-    ): Variable<*> = ops.variable(dataType, name, shape).also { variable ->
+    ): Variable<*> = variable(name, initialValue, shape, dataType).also { variable ->
         if (trainable) {
             parameterList.add(variable)
         }
-
-        initialValue?.let {
-            initializationList += assign(variable, it, name = "${variable.localName}_init")
-        } ?: Unit
     }
 
     fun regularize(operand: TFOperand) {
@@ -182,6 +201,7 @@ open class ModelBuilder(
             inputList = inputList,
             outputList = outputList,
             parameterList = parameterList,
+            variableList = variableList,
             regularizationList = regularizationList,
             trainingFactor = trainingFactor
         ).run(init)

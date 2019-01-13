@@ -57,7 +57,7 @@ Training on ${parameters.dataset.size} data points for ${parameters.epochs} epoc
         val eta = elapsed / doneRatio - elapsed
 
         renderLine(
-            "Trained on %d/%d loss: %g ETA: %.0f seconds".format(shownDataPoints, datasetSize, loss, eta)
+            "Trained on %d/%d metric: %g ETA: %.0f seconds".format(shownDataPoints, datasetSize, loss, eta)
         )
         batchLoss += loss
     }

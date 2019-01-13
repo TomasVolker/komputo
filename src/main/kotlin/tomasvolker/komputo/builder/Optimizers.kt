@@ -35,7 +35,7 @@ abstract class GradientAlgorithm: Optimizer {
 
                 val grad = gradients(loss, parameterList)
 
-                result = buildUpdateOperations(builder, parameterList, grad)
+                result = buildOptimzeOperations(builder, parameterList, grad)
 
             }
 
@@ -47,8 +47,13 @@ abstract class GradientAlgorithm: Optimizer {
 
     }
 
-    abstract fun buildUpdateOperations(
+    fun buildOptimzeOperations(
         builder: ModelBuilder,
+        parameterList: List<Variable<*>>,
+        gradients: Gradients
+    ): List<TFOperand> = builder.buildOperations(parameterList, gradients)
+
+    abstract fun ModelBuilder.buildOperations(
         parameterList: List<Variable<*>>,
         gradients: Gradients
     ): List<TFOperand>
@@ -57,21 +62,18 @@ abstract class GradientAlgorithm: Optimizer {
 
 class GradientDescent(val rate: Double): GradientAlgorithm() {
 
-    override fun buildUpdateOperations(
-        builder: ModelBuilder,
+    override fun ModelBuilder.buildOperations(
         parameterList: List<Variable<*>>,
         gradients: Gradients
     ): List<TFOperand> {
-        with(builder) {
-            val rate = constant(rate)
+        val rate = constant(rate)
 
-            return parameterList.mapIndexed { i, parameter ->
-                ops.applyGradientDescent(
-                    parameter.asOfAny(),
-                    rate.asOfAny(),
-                    gradients.dy(i)
-                )
-            }
+        return parameterList.mapIndexed { i, parameter ->
+            ops.applyGradientDescent(
+                parameter.asOfAny(),
+                rate.asOfAny(),
+                gradients.dy(i)
+            )
         }
     }
 
@@ -82,37 +84,33 @@ class Momentum(
     val momentum: Double = 0.9
 ): GradientAlgorithm() {
 
-    override fun buildUpdateOperations(
-        builder: ModelBuilder,
+    override fun ModelBuilder.buildOperations(
         parameterList: List<Variable<*>>,
         gradients: Gradients
     ): List<TFOperand> {
-        with(builder) {
-            val rate = constant(rate)
-            val momentum = constant(momentum)
+        val rate = constant(rate)
+        val momentum = constant(momentum)
 
-            return parameterList.mapIndexed { i, parameter ->
+        return parameterList.mapIndexed { i, parameter ->
 
-                val parameterShape = parameter.shape
+            val parameterShape = parameter.shape
 
-                val accumulator = variable(
-                    "${parameter.localName}_accumulator",
-                    shape = parameterShape,
-                    dataType = defaultFloatDataType,
-                    initialValue = broadcastTo(constant(0.0), constant(parameterShape))
-                )
+            val accumulator = variable(
+                "${parameter.localName}_accumulator",
+                shape = parameterShape,
+                dataType = defaultFloatDataType,
+                initialValue = broadcastTo(constant(0.0), constant(parameterShape))
+            )
 
-                ops.applyMomentum(
-                    parameter.asOfAny(),
-                    accumulator.asOfAny(),
-                    rate.asOfAny(),
-                    gradients.dy(i),
-                    momentum.asOfAny()
-                )
-            }
+            ops.applyMomentum(
+                parameter.asOfAny(),
+                accumulator.asOfAny(),
+                rate.asOfAny(),
+                gradients.dy(i),
+                momentum.asOfAny()
+            )
         }
     }
-
 
 }
 
@@ -121,32 +119,29 @@ class Adagrad(
     val epsilon: Double = 1e-8
 ): GradientAlgorithm() {
 
-    override fun buildUpdateOperations(
-        builder: ModelBuilder,
+    override fun ModelBuilder.buildOperations(
         parameterList: List<Variable<*>>,
         gradients: Gradients
     ): List<TFOperand> {
-        with(builder) {
-            val rate = constant(rate)
+        val rate = constant(rate)
 
-            return parameterList.mapIndexed { i, parameter ->
+        return parameterList.mapIndexed { i, parameter ->
 
-                val parameterShape = parameter.shape
+            val parameterShape = parameter.shape
 
-                val accumulator = variable(
-                    "${parameter.localName}_accumulator",
-                    shape = parameterShape,
-                    dataType = defaultFloatDataType,
-                    initialValue = broadcastTo(constant(epsilon), constant(parameterShape))
-                )
+            val accumulator = variable(
+                "${parameter.localName}_accumulator",
+                shape = parameterShape,
+                dataType = defaultFloatDataType,
+                initialValue = broadcastTo(constant(epsilon), constant(parameterShape))
+            )
 
-                ops.applyAdagrad(
-                    parameter.asOfAny(),
-                    accumulator.asOfAny(),
-                    rate.asOfAny(),
-                    gradients.dy(i)
-                )
-            }
+            ops.applyAdagrad(
+                parameter.asOfAny(),
+                accumulator.asOfAny(),
+                rate.asOfAny(),
+                gradients.dy(i)
+            )
         }
     }
 

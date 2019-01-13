@@ -10,6 +10,7 @@ import org.tensorflow.types.UInt8
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1D
+import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 
 typealias TFOperand = Operand<*>
 typealias TFVariable = Variable<*>
@@ -47,6 +48,7 @@ fun Int.castTo(dataType: DataType): Any = when(dataType) {
     DataType.STRING -> error("Cannot cast Int to STRING")
 }
 
+val scalar: IntArray1D = intArray1DOf()
 
 fun Shape.toIntArray1D() = intArray1D(numDimensions()) { i -> size(i).toInt() }
 
@@ -63,3 +65,4 @@ fun IntArray1D?.toShape(): Shape =
 
 fun TFOperand.asOfAny(): Operand<Any> = this as Operand<Any>
 fun TFOperand.asOfNumber(): Operand<Number> = this as Operand<Number>
+fun TFOperand.asOfString(): Operand<String> = this as Operand<String>

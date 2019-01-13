@@ -1,8 +1,12 @@
 package tomasvolker.komputo
 
+import org.tensorflow.DataType
 import org.tensorflow.Graph
 import org.tensorflow.Session
+import org.tensorflow.Shape
+import org.tensorflow.op.Operands
 import org.tensorflow.op.Ops
+import tomasvolker.komputo.dsl.name
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.index.All
 import tomasvolker.numeriko.core.interfaces.arraynd.double.unsafeGetView
@@ -10,51 +14,58 @@ import tomasvolker.numeriko.core.interfaces.factory.doubleArray2D
 import tomasvolker.numeriko.core.interfaces.factory.nextDoubleArray2D
 import tomasvolker.komputo.dsl.toDoubleNDArray
 import tomasvolker.komputo.dsl.toTensor
+import tomasvolker.numeriko.core.interfaces.factory.doubleArray0D
 import kotlin.random.Random
 
 fun main() {
-
-    val image = Random.nextDoubleArray2D(8, 8)
-    val filter = doubleArray2D(1, 1) { _, _ -> 1.0 }
-
-    val expected = image.filter2D(filter)
-
-    println(image)
-    println(expected)
 
     Graph().use { graph ->
 
         val ops = Ops.create(graph)
 
-        val p1 = ops.placeholder(java.lang.Float::class.java)
-        val p2 = ops.placeholder(java.lang.Float::class.java)
+        val var1 = ops.variable(Shape.scalar(), java.lang.Float::class.java)
+        val set = ops.assign(var1.asOfNumber(), ops.constant(8.0f).asOfNumber())
 
-        val rehsaped1 = ops.reshape(p1, ops.constant(intArrayOf(1, 8, 8, 1)))
-        val rehsaped2 = ops.reshape(p2, ops.constant(intArrayOf(1, 1, 1, 1)))
+        val filename = ops.constant("graph.pb".toByteArray(Charsets.US_ASCII))
+        val varNameTensor = ops.constant(arrayOf(var1.name.toByteArray(Charsets.US_ASCII)))
+        val varName = ops.constant(var1.name.toByteArray(Charsets.US_ASCII))
 
-        val op = ops.conv2D(
-            rehsaped1, rehsaped2,
-            I[1, 1, 1, 1].toList().map { it.toLong() },
-            "SAME"
-        )
+        val save = graph.opBuilder("Save", "Save").apply {
+            addInput(filename.asOutput())
+            addInput(varNameTensor.asOutput())
+            addInputList(listOf(var1).map { it.asOutput() }.toTypedArray())
+        }.build()
 
+        val restore = graph.opBuilder("Restore", "Restore").apply {
+            addInput(filename.asOutput())
+            addInput(varName.asOutput())
+            setAttr("dt", DataType.FLOAT)
+        }.build()
 
         Session(graph).use { session ->
+/*
+            session.runner()
+                .addTarget(set)
+                .run()
 
-            val tensor1 = image.toTensor()
-            val tensor2 = filter.toTensor()
+            session.runner()
+                .addTarget(save)
+                .run()
+*/
+
+            val value = session.runner()
+                .fetch(restore.output<Float>(0))
+                .run()
+
+            println("value: ${value.map { it.toDoubleNDArray() }}")
 
             val result = session.runner()
-                .feed(p1.output(), tensor1)
-                .feed(p2.output(), tensor2)
-                .fetch(op)
+                .fetch(var1)
                 .run().first()
 
-            println("result: \n${result.toDoubleNDArray().unsafeGetView(0, All, All, 0)}")
+            println(result.toDoubleNDArray())
 
             result.close()
-            tensor1.close()
-            tensor2.close()
 
         }
 

@@ -1,14 +1,17 @@
 package tomasvolker.komputo.builder
 
-import org.tensorflow.op.Ops
+import org.tensorflow.DataType
+import org.tensorflow.Operation
+import org.tensorflow.op.Operands
 import org.tensorflow.op.core.PlaceholderWithDefault
-import tomasvolker.komputo.TFOperand
-import tomasvolker.komputo.TFPlaceholder
-import tomasvolker.komputo.TFVariable
-import tomasvolker.komputo.dsl.dataType
-import tomasvolker.komputo.dsl.localName
-import tomasvolker.komputo.dsl.shape
+import org.tensorflow.op.core.RestoreV2
+import org.tensorflow.op.core.Save
+import org.tensorflow.op.core.SaveV2
+import tomasvolker.komputo.*
+import tomasvolker.komputo.dsl.*
+import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
+import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 
 class TrainableModel(
@@ -16,18 +19,23 @@ class TrainableModel(
     inputList: List<TFOperand>,
     outputList: List<TFOperand>,
     parameterList: List<TFVariable>,
+    variableList: List<TFVariable>,
     regularizationList: List<TFOperand>,
     trainingFactor: PlaceholderWithDefault<*>,
     initializeList: List<TFOperand>,
     val targetList: List<TFPlaceholder>,
     val loss: TFOperand,
     val cost: TFOperand,
-    val optimize: TFOperand
+    val optimize: TFOperand,
+    val filename: TFOperand,
+    val save: Operation,
+    val restore: TFOperand
 ): Model(
     builder = builder,
     inputList = inputList,
     outputList = outputList,
     parameterList = parameterList,
+    variableList = variableList,
     regularizationList = regularizationList,
     trainingFactor = trainingFactor,
     initializeList = initializeList
@@ -42,7 +50,7 @@ fun trainableModel(init: TrainableModelBuilder.()->Unit) =
 class TrainableModelBuilder{
 
     var model: Model? = null
-    var loss: LossFunction = meanSquareError
+    var loss: Metric = meanSquareError
     var optimizer: Optimizer = GradientDescent(1.0)
 
     var regularize: Boolean = true
@@ -57,8 +65,8 @@ class TrainableModelBuilder{
     fun sequential(inputShape: IntArray1D, block: SequentialBuilder.()->Unit): Model =
         sequentialModel(inputShape, block).also { model = it }
 
-    fun training(block: ModelBuilder.() -> Unit) {
-        model?.builder?.block()
+    fun training(block: () -> Unit) {
+        block()
     }
 
     fun build(): TrainableModel {
@@ -69,6 +77,11 @@ class TrainableModelBuilder{
         lateinit var lossOperation: TFOperand
         lateinit var costOperation: TFOperand
         lateinit var optimize: TFOperand
+
+        lateinit var saveOp: Operation
+        lateinit var restoreOp: TFOperand
+
+        lateinit var filename: TFOperand
 
         with(model.builder) {
 
@@ -103,6 +116,32 @@ class TrainableModelBuilder{
             }
 
 
+            scope("save") {
+                filename = placeholder("file_name", shape = scalar, dataType = DataType.STRING)
+
+                val tensorNames = constant(variableList.map { it.name }).asOfString()
+
+                saveOp = ops.save(
+                    filename,
+                    tensorNames,
+                    variableList
+                )
+
+                val restoreValues = ops.restore(
+                    filename,
+                    tensorNames,
+                    broadcastTo(constant(""), constant(I[variableList.size])),
+                    variableList.map { /*it.dataType*/ DataType.FLOAT }
+                )
+
+                val restoreOps = variableList.zip(restoreValues.outputList(0, variableList.size)) { variable, output ->
+                    variable assignTo output
+                }
+
+                restoreOp = group(restoreOps)
+            }
+
+
         }
 
         return TrainableModel(
@@ -110,13 +149,17 @@ class TrainableModelBuilder{
             inputList = model.inputList,
             outputList = model.outputList,
             parameterList = model.parameterList,
+            variableList = model.variableList,
             regularizationList = model.regularizationList,
             trainingFactor = model.trainingFactor,
             initializeList = model.initializeList,
             targetList = targetList,
             loss = lossOperation,
             cost = costOperation,
-            optimize = optimize
+            optimize = optimize,
+            filename = filename,
+            save = saveOp,
+            restore = restoreOp
         )
     }
 

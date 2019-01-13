@@ -1,9 +1,8 @@
 package tomasvolker.komputo.dsl
 
-import org.tensorflow.DataType
-import org.tensorflow.Operand
-import org.tensorflow.OperationBuilder
+import org.tensorflow.*
 import org.tensorflow.Shape
+import org.tensorflow.op.Operands
 import org.tensorflow.op.Ops
 import org.tensorflow.op.core.*
 import tomasvolker.komputo.*
@@ -166,6 +165,43 @@ fun Ops.group(name: String, operands: Iterable<TFOperand>): TFOperand =
         }
     }.output<Any>(0)
 
+fun Ops.save(filename: TFOperand, tensorNames: TFOperand, data: List<TFOperand>): Operation =
+        save("Save", filename, tensorNames, data)
+
+fun Ops.save(name: String, filename: TFOperand, tensorNames: TFOperand, data: List<TFOperand>): Operation =
+    buildOp("Save", name = scope().makeOpName(name)) {
+        addInput(filename.asOutput())
+        addInput(tensorNames.asOutput())
+        addInputList(Operands.asOutputs(data))
+    }
+
+fun Ops.restore(
+    filename: TFOperand,
+    tensorNames: TFOperand,
+    shapeAndSlices: TFOperand,
+    dataTypes: List<DataType>
+): Operation =
+        restore(
+            "RestoreV2",
+            filename,
+            tensorNames,
+            shapeAndSlices,
+            dataTypes
+        )
+
+fun Ops.restore(
+    name: String,
+    filename: TFOperand,
+    tensorNames: TFOperand,
+    shapeAndSlices: TFOperand,
+    dataTypes: List<DataType>
+): Operation =
+    buildOp("RestoreV2", name = scope().makeOpName(name)) {
+        addInput(filename.asOutput())
+        addInput(tensorNames.asOutput())
+        addInput(shapeAndSlices.asOutput())
+        setAttr("dtypes", dataTypes.toTypedArray())
+    }
 
 fun Ops.noOperation(name: String? = null): TFOperand =
     buildOp("NoOp", name = scope().makeOpName(name ?: "NoOp")).output<Any>(0)

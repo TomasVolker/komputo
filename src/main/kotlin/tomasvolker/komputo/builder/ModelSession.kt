@@ -1,16 +1,29 @@
 package tomasvolker.komputo.builder
 
 import org.tensorflow.Operand
+import org.tensorflow.Operation
 import org.tensorflow.Session
 import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.dsl.*
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
+import tomasvolker.numeriko.core.interfaces.arraynd.generic.ArrayND
+import tomasvolker.numeriko.core.interfaces.factory.array0D
 
-fun <M: Model> session(model: M, block: ModelSession<M>.()->Unit) {
+fun ModelSession<TrainableModel>.save(filename: String) {
+    execute(model.save, feed = mapOf(model.filename to array0D(filename)))
+}
+
+fun ModelSession<TrainableModel>.restore(filename: String) {
+    execute(model.restore, feed = mapOf(model.filename to array0D(filename)))
+}
+
+fun <M: Model> session(model: M, initialize: Boolean = true, block: ModelSession<M>.()->Unit) {
     ModelSession(model).use { session ->
 
-        model.initializeList.forEach {
-            session.execute(it)
+        if (initialize) {
+            model.initializeList.forEach {
+                session.execute(it)
+            }
         }
 
         session.block()
@@ -38,25 +51,32 @@ class ModelSession<out M: Model>(
         )
 
     fun execute(
+        operation: Operation,
+        feed: Map<TFOperand, ArrayND<*>> = emptyMap()
+    ) {
+        tensorflowSession.execute(operation, feed)
+    }
+
+    fun execute(
         target: TFOperand,
-        feed: Map<TFOperand, DoubleArrayND> = emptyMap()
+        feed: Map<TFOperand, ArrayND<*>> = emptyMap()
     ) = tensorflowSession.execute(target, feed)
 
     fun execute(
         targetList: List<TFOperand>,
-        feed: Map<TFOperand, DoubleArrayND> = emptyMap()
+        feed: Map<TFOperand, ArrayND<*>> = emptyMap()
     ) = tensorflowSession.execute(targetList, feed)
 
     fun evaluate(
         operand: Operand<*>,
         targetList: List<TFOperand> = emptyList(),
-        feed: Map<TFOperand, DoubleArrayND> = emptyMap()
+        feed: Map<TFOperand, ArrayND<*>> = emptyMap()
     ): DoubleArrayND = tensorflowSession.evaluate(operand, targetList, feed)
 
     fun evaluate(
         operandList: List<TFOperand> = emptyList(),
         targetList: List<TFOperand> = emptyList(),
-        feed: Map<TFOperand, DoubleArrayND> = emptyMap()
+        feed: Map<TFOperand, ArrayND<*>> = emptyMap()
     ): List<DoubleArrayND> = tensorflowSession.evaluate(operandList, targetList, feed)
 
     override fun close() {
