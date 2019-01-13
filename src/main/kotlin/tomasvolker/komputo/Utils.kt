@@ -1,6 +1,7 @@
 package tomasvolker.komputo
 
 import org.tensorflow.DataType
+import org.tensorflow.Graph
 import org.tensorflow.Operand
 import org.tensorflow.Shape
 import org.tensorflow.op.core.Constant
@@ -11,6 +12,7 @@ import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1D
 import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
+import java.io.File
 
 typealias TFOperand = Operand<*>
 typealias TFVariable = Variable<*>
@@ -66,3 +68,7 @@ fun IntArray1D?.toShape(): Shape =
 fun TFOperand.asOfAny(): Operand<Any> = this as Operand<Any>
 fun TFOperand.asOfNumber(): Operand<Number> = this as Operand<Number>
 fun TFOperand.asOfString(): Operand<String> = this as Operand<String>
+
+
+fun loadGraphDef(path: String): Graph = loadGraphDef(File(path))
+fun loadGraphDef(file: File): Graph = Graph().apply { importGraphDef(file.readBytes()) }

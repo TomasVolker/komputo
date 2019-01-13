@@ -35,8 +35,10 @@ fun main() {
 
     }
 
-    session(model, initialize = false) {
-/*
+    model.saveGraphDef("simplenet.pb")
+
+    session(model) {
+
         train {
 
             dataset = trainDataset.mapLabels { it.toOneHot(10) }
@@ -47,8 +49,6 @@ fun main() {
             verbose()
 
         }
-*/
-        restore("test_save.pb")
 
         fun classify(image: DoubleArray2D): DoubleArray1D =
             softmax(evaluate(image).first().as2D()[0, All])

@@ -16,7 +16,12 @@ import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 import tomasvolker.numeriko.core.operations.concatenate
+import java.io.File
 import java.nio.charset.Charset
+
+fun Model.saveGraphDef(filename: String) {
+    File(filename).writeBytes(graph.toGraphDef())
+}
 
 open class Model(
     val builder: ModelBuilder,
