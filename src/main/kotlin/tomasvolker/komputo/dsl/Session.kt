@@ -11,6 +11,8 @@ open class TensorflowSession(
     val session: Session
 ): AutoCloseable {
 
+    constructor(graph: Graph): this(Session(graph))
+
     inner class Runner {
 
         private val feed = mutableMapOf<Any, ArrayND<*>>()
@@ -184,6 +186,7 @@ open class TensorflowSession(
 }
 
 
-inline fun <T> session(graph: Graph, block: TensorflowSession.()->T) = TensorflowSession(Session(graph)).use(block)
+inline fun <T> session(graph: Graph, block: TensorflowSession.()->T) = TensorflowSession(graph).use(block)
+
 
 

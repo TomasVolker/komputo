@@ -1,9 +1,6 @@
 package tomasvolker.komputo
 
-import org.tensorflow.DataType
-import org.tensorflow.Graph
-import org.tensorflow.Operand
-import org.tensorflow.Shape
+import org.tensorflow.*
 import org.tensorflow.op.core.Constant
 import org.tensorflow.op.core.Placeholder
 import org.tensorflow.op.core.Variable
@@ -13,6 +10,7 @@ import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.intArray1D
 import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import java.io.File
+import java.lang.IllegalArgumentException
 
 typealias TFOperand = Operand<*>
 typealias TFVariable = Variable<*>
@@ -72,3 +70,15 @@ fun TFOperand.asOfString(): Operand<String> = this as Operand<String>
 
 fun loadGraphDef(path: String): Graph = loadGraphDef(File(path))
 fun loadGraphDef(file: File): Graph = Graph().apply { importGraphDef(file.readBytes()) }
+
+val Operation.outputs: List<Output<*>> get() =
+    List(numOutputs()) { i -> output<Any>(i) }
+
+fun Output<*>.safeToString(): String {
+    val datatype = try {
+        dataType()
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+    return "<index = ${this.index()}, shape = ${shape()}, datatype = $datatype>"
+}

@@ -1,9 +1,9 @@
 package tomasvolker.komputo.builder
 
 import tomasvolker.komputo.dataset.LabeledDataset
-import tomasvolker.komputo.performance.stack
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.doubleArray0D
+import tomasvolker.numeriko.core.operations.stack
 
 fun ModelSession<TrainableModel>.train(init: TrainingParameters.()->Unit) {
     TrainingSession(this, TrainingParameters().apply(init)).run()
@@ -128,8 +128,8 @@ class TrainingSession(
 
                     val batchContext = BatchContext(this@TrainingSession, batchIndex, epoch)
 
-                    val inputTensor = stack(batch.map { it.data })
-                    val output = stack(batch.map { it.label })
+                    val inputTensor = batch.map { it.data }.stack(axis = 0)
+                    val output = batch.map { it.label }.stack(axis = 0)
 
                     val (loss, cost) = evaluate(
                         operandList = listOf(model.loss, model.cost),
