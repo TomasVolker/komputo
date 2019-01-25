@@ -12,7 +12,9 @@ import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import java.io.File
 import java.lang.IllegalArgumentException
 
+typealias TFOperation = Operation
 typealias TFOperand = Operand<*>
+typealias TFOutput = Output<*>
 typealias TFVariable = Variable<*>
 typealias TFPlaceholder = Placeholder<*>
 typealias TFConstant = Constant<*>

@@ -1,7 +1,6 @@
 package tomasvolker.komputo.builder
 
 import org.tensorflow.*
-import org.tensorflow.op.Operands
 import org.tensorflow.op.Ops
 import org.tensorflow.op.Scope
 import org.tensorflow.op.core.*
@@ -17,30 +16,11 @@ import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 import tomasvolker.numeriko.core.operations.concatenate
 import java.io.File
-import java.nio.charset.Charset
+
 
 fun Model.saveGraphDef(filename: String) {
     File(filename).writeBytes(graph.toGraphDef())
 }
-
-open class Model(
-    val builder: ModelBuilder,
-    val inputList: List<TFOperand>,
-    val outputList: List<TFOperand>,
-    val parameterList: List<TFVariable>,
-    val variableList: List<TFVariable>,
-    val regularizationList: List<TFOperand> = mutableListOf(),
-    val trainingFactor: PlaceholderWithDefault<*>,
-    val initializeList: List<TFOperand> = emptyList()
-) {
-
-    val inputSize: Int = inputList.size
-    val outputSize: Int = outputList.size
-
-    val graph get() = builder.graph
-
-}
-
 
 open class ModelBuilder(
     val ops: Ops,
@@ -76,7 +56,7 @@ open class ModelBuilder(
     inline fun sequential(input: TFOperand, sequence: SequentialBuilder.()->Unit): TFOperand =
         SequentialBuilder(this, input).apply(sequence).output
 
-    open fun build(): Model = Model(
+    open fun build(): Model = TensorflowModel(
         builder = this,
         inputList = inputList,
         outputList = outputList,

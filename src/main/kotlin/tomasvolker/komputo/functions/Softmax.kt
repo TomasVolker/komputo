@@ -8,6 +8,5 @@ import kotlin.math.exp
 fun softmax(array: DoubleArray1D): DoubleArray1D {
     val result = array.elementWise { exp(it) }.asMutable()
     val sum = result.sum()
-    result.applyElementWise { it / sum }
-    return result
+    return result.applyElementWise { it / sum }
 }

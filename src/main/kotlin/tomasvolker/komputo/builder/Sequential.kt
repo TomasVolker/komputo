@@ -59,9 +59,9 @@ class SequentialBuilder(
     ): TFOperand = layer { dropout(it, keepProbability) }
 
     fun conv2d(
+        filterCount: Int = 1,
         kernelSize: IntArray1D,
         strides: IntArray1D = I[1, 1],
-        filterCount: Int = 1,
         padding: ConvPadding = ConvPadding.SAME,
         activation: Activation = IDENTITY
     ): TFOperand {

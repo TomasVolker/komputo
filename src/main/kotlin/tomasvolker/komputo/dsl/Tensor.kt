@@ -41,7 +41,7 @@ fun ArrayND<*>.toTensor(): Tensor<*> = when(this) {
     is DoubleArrayND -> toTensor()
     is NumerikoArray1D<*> -> {
 
-        if (first() is String) {
+        if (all { it is String }) {
             this as NumerikoArray1D<String>
             Tensor.create(data.map { it.toByteArray(Charsets.US_ASCII) })
         } else

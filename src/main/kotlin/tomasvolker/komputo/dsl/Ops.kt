@@ -119,7 +119,7 @@ inline fun Ops.buildOp(
     name: String = scope().makeOpName(operation),
     init: OperationBuilder.()->Unit = {}
 ) =
-    scope().graph().opBuilder(operation, name).apply(init).build()
+    scope().graph().buildOp(operation, name, init)
 
 
 

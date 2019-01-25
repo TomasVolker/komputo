@@ -3,5 +3,6 @@ out/
 .gradle/
 .idea/
 
+build/
 lib/
 data/

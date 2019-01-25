@@ -10,11 +10,11 @@ import tomasvolker.numeriko.core.interfaces.arraynd.generic.ArrayND
 import tomasvolker.numeriko.core.interfaces.factory.array0D
 
 fun ModelSession<TrainableModel>.save(filename: String) {
-    execute(model.save, feed = mapOf(model.filename to array0D(filename)))
+    execute(model.training.save, feed = mapOf(model.training.filename to array0D(filename)))
 }
 
 fun ModelSession<TrainableModel>.restore(filename: String) {
-    execute(model.restore, feed = mapOf(model.filename to array0D(filename)))
+    execute(model.training.restore, feed = mapOf(model.training.filename to array0D(filename)))
 }
 
 fun <M: Model> session(model: M, initialize: Boolean = true, block: ModelSession<M>.()->Unit) {

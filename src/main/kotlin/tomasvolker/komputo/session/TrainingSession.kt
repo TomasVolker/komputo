@@ -1,5 +1,7 @@
-package tomasvolker.komputo.builder
+package tomasvolker.komputo.session
 
+import tomasvolker.komputo.builder.ModelSession
+import tomasvolker.komputo.builder.TrainableModel
 import tomasvolker.komputo.dataset.LabeledDataset
 import tomasvolker.numeriko.core.interfaces.arraynd.double.DoubleArrayND
 import tomasvolker.numeriko.core.interfaces.factory.doubleArray0D

@@ -2,27 +2,15 @@ package tomasvolker.komputo.builder
 
 import org.tensorflow.DataType
 import org.tensorflow.Operation
-import org.tensorflow.op.Operands
-import org.tensorflow.op.core.PlaceholderWithDefault
-import org.tensorflow.op.core.RestoreV2
-import org.tensorflow.op.core.Save
-import org.tensorflow.op.core.SaveV2
 import tomasvolker.komputo.*
+import tomasvolker.komputo.builder.optimizers.GradientDescent
+import tomasvolker.komputo.builder.optimizers.Optimizer
 import tomasvolker.komputo.dsl.*
 import tomasvolker.numeriko.core.dsl.I
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
-import tomasvolker.numeriko.core.interfaces.factory.intArray1DOf
 import tomasvolker.numeriko.core.interfaces.factory.toIntArray1D
 
-class TrainableModel(
-    builder: ModelBuilder,
-    inputList: List<TFOperand>,
-    outputList: List<TFOperand>,
-    parameterList: List<TFVariable>,
-    variableList: List<TFVariable>,
-    regularizationList: List<TFOperand>,
-    trainingFactor: PlaceholderWithDefault<*>,
-    initializeList: List<TFOperand>,
+class Training(
     val targetList: List<TFPlaceholder>,
     val loss: TFOperand,
     val cost: TFOperand,
@@ -30,28 +18,24 @@ class TrainableModel(
     val filename: TFOperand,
     val save: Operation,
     val restore: TFOperand
-): Model(
-    builder = builder,
-    inputList = inputList,
-    outputList = outputList,
-    parameterList = parameterList,
-    variableList = variableList,
-    regularizationList = regularizationList,
-    trainingFactor = trainingFactor,
-    initializeList = initializeList
 )
+
+class TrainableModel(
+    val model: Model,
+    val training: Training
+): Model by model
 
 
 fun trainableModel(init: TrainableModelBuilder.()->Unit) =
     TrainableModelBuilder().apply(init).build()
 
 
-
 class TrainableModelBuilder{
 
     var model: Model? = null
     var loss: Metric = meanSquareError
-    var optimizer: Optimizer = GradientDescent(1.0)
+    var optimizer: Optimizer =
+        GradientDescent(1.0)
 
     var regularize: Boolean = true
 
@@ -71,11 +55,6 @@ class TrainableModelBuilder{
 
     fun build(): TrainableModel {
 
-        val model = model ?: error("model is not defined")
-
-        lateinit var targetList: List<TFPlaceholder>
-        lateinit var lossOperation: TFOperand
-        lateinit var costOperation: TFOperand
         lateinit var optimize: TFOperand
 
         lateinit var saveOp: Operation
@@ -83,6 +62,11 @@ class TrainableModelBuilder{
 
         lateinit var filename: TFOperand
 
+        val model = model ?: error("model is not defined")
+
+        lateinit var targetList: List<TFPlaceholder>
+        lateinit var lossOperation: TFOperand
+        lateinit var costOperation: TFOperand
         with(model.builder) {
 
             scope("target") {

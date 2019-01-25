@@ -1,4 +1,4 @@
-package tomasvolker.komputo.builder
+package tomasvolker.komputo.session
 
 import tomasvolker.komputo.performance.Timer
 
