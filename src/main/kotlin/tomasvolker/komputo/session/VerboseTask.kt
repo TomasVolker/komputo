@@ -66,7 +66,7 @@ Training on ${parameters.dataset.size} data points for ${parameters.epochs} epoc
         clearLine()
         val averageLoss = batchLoss.average()
         val epochTime = epochTimer.tickSeconds()
-        println("Epoch %d/%d finished on %.2f seconds, average loss: %g".format(
+        println("Epoch %d/%d finished in %.2f seconds, average loss: %g".format(
             context.epoch,
             context.epochCount,
             epochTime,
