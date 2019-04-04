@@ -9,7 +9,6 @@ import tomasvolker.numeriko.core.functions.argmax
 import tomasvolker.numeriko.core.index.All
 import tomasvolker.numeriko.core.interfaces.array1d.double.DoubleArray1D
 import tomasvolker.numeriko.core.interfaces.array2d.double.DoubleArray2D
-import tomasvolker.numeriko.core.primitives.indicator
 
 fun main() {
 
@@ -61,14 +60,28 @@ fun main() {
 
 
         fun classify(image: DoubleArray2D): DoubleArray1D =
-            softmax(evaluate(image).first().as2D()[0, All])
+            softmax(evaluate(image).as2D()[0, All])
 
+        val predicted = testDataset.map { it to classify(it.data) }
+
+        val errors = predicted.filter { it.first.label != it.second.argmax() }.shuffled()
+
+        println("Accuracy: ${100 * errors.size.toDouble() / testDataset.size}% Errors: ${errors.size}")
+
+        errors.forEach {
+
+            println(it.first.label.toString() + " -> " + highestPredictionsString(it.second))
+
+            showMnist(it.first.data)
+
+        }
+/*
         val testAccuracy = testDataset.map {
             (classify(it.data).argmax() == it.label).indicator()
         }.average()
 
         println("Test accuracy: %.2f%%".format(testAccuracy * 100))
-
+*/
     }
 
 }

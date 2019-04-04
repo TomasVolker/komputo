@@ -127,7 +127,8 @@ class TrainableModelBuilder{
 
 
         }
-
+        return TODO()
+/*
         return TrainableModel(
             builder = model.builder,
             inputList = model.inputList,
@@ -144,7 +145,7 @@ class TrainableModelBuilder{
             filename = filename,
             save = saveOp,
             restore = restoreOp
-        )
+        )*/
     }
 
 }

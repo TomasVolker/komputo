@@ -2,14 +2,11 @@ package tomasvolker.komputo.builder.computationgraph
 
 import org.tensorflow.DataType
 import org.tensorflow.Graph
-import org.tensorflow.op.Scope
-import org.tensorflow.op.core.Variable
 import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.TFOperation
 import tomasvolker.komputo.dsl.get
+import tomasvolker.komputo.scalar
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
-import java.lang.IllegalArgumentException
-import java.util.regex.Pattern
 
 interface ComputationGraph {
 
@@ -19,27 +16,32 @@ interface ComputationGraph {
     val placeholderList: List<TFOperand>
     val variableList: List<TFOperand>
 
+    class Scope(
+        val name: String
+    ) {
+
+        val nameMap = mutableMapOf<String, Int>()
+
+        fun newName(name: String): String {
+            if(name.matches(NAME_REGEX)) {
+                val index = nameMap[name] ?: 0
+                nameMap[name] = index + 1
+                return name + if(index > 0) "_$index" else ""
+            } else {
+                throw IllegalArgumentException("The name provided is not valid")
+            }
+        }
+
+    }
+
+    fun operation(name: String): TFOperation? = tfGraph.operation(name)
+    val operations: Set<TFOperation> get() = tfGraph.operations().asSequence().toSet()
+
 }
 
 private val NAME_REGEX = "[A-Za-z0-9.][A-Za-z0-9_.\\-]*".toRegex()
 
-class ComputationGraphScope(
-    val name: String
-) {
 
-    val nameMap = mutableMapOf<String, Int>()
-
-    fun newName(name: String): String {
-        if(name.matches(NAME_REGEX)) {
-            val index = nameMap[name] ?: 0
-            nameMap[name] = index + 1
-            return name + if(index > 0) "_$index" else ""
-        } else {
-            throw IllegalArgumentException("The name provided is not valid")
-        }
-    }
-
-}
 
 interface ComputationGraphBuilder {
 
@@ -49,7 +51,28 @@ interface ComputationGraphBuilder {
     var defaultFloatDataType: DataType
     var defaultIntegerDataType: DataType
 
+    var scope: ComputationGraph.Scope
+
+    fun build(): ComputationGraph
+
 }
+
+class ComputationGraphBuilderImpl(
+    override val tfGraph: Graph = Graph()
+) : ComputationGraphBuilder {
+
+    override var defaultDataType = DataType.FLOAT
+    override var defaultFloatDataType = DataType.FLOAT
+    override var defaultIntegerDataType = DataType.FLOAT
+
+    override var scope = ComputationGraph.Scope("")
+
+    override fun build(): ComputationGraph = TODO()
+
+}
+
+fun computationGraph(block: ComputationGraphBuilder.()->Unit): ComputationGraph =
+        ComputationGraphBuilderImpl().apply(block).build()
 
 inline fun ComputationGraphBuilder.operation(
     operation: String,
