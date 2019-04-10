@@ -132,7 +132,7 @@ class TrainingSession(
 
                     val inputTensor = batch.map { it.data }.stack(axis = 0)
                     val output = batch.map { it.label }.stack(axis = 0)
-
+                    /*
                     val (loss, cost) = evaluate(
                         operandList = listOf(model.loss, model.cost),
                         targetList = listOf(model.optimize),
@@ -142,8 +142,9 @@ class TrainingSession(
                             model.trainingFactor to doubleArray0D(1.0)
                         )
                     )
+                    */
 
-                    taskList.asReversed().forEach { it.afterBatch(batchContext, loss.as0D().get()) }
+                    //taskList.asReversed().forEach { it.afterBatch(batchContext, loss.as0D().get()) }
                 }
 
                 taskList.asReversed().forEach { it.afterEpoch(epochContext) }

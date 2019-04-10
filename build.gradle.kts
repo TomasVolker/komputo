@@ -28,8 +28,9 @@ dependencies {
     compile(kotlin("stdlib-jdk8"))
     testCompile("junit", "junit", "4.12")
 
-    api(group = "org.tensorflow", name = "tensorflow", version = "1.11.0")
-    //api(group = "org.tensorflow", name = "libtensorflow_jni_gpu", version = "1.11.0")
+    api(group = "org.tensorflow", name = "tensorflow", version = "1.12.0")
+    api(group = "org.tensorflow", name = "proto", version = "1.12.0")
+    //api(group = "org.tensorflow", name = "libtensorflow_jni_gpu", version = "1.12.0")
 
     api(group = "tomasvolker", name = "numeriko-core", version = "0.0.3")
     testImplementation(group = "tomasvolker", name = "kyplot", version = "0.0.1")

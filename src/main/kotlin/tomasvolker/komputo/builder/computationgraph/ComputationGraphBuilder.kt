@@ -5,7 +5,6 @@ import org.tensorflow.Graph
 import tomasvolker.komputo.TFOperand
 import tomasvolker.komputo.TFOperation
 import tomasvolker.komputo.dsl.get
-import tomasvolker.komputo.scalar
 import tomasvolker.numeriko.core.interfaces.array1d.integer.IntArray1D
 
 interface ComputationGraph {

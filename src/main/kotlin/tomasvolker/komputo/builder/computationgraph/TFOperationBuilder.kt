@@ -1,9 +1,9 @@
 package tomasvolker.komputo.builder.computationgraph
 
+import org.tensorflow.*
 import org.tensorflow.DataType
-import org.tensorflow.OperationBuilder
-import org.tensorflow.Shape
-import org.tensorflow.Tensor
+import org.tensorflow.framework.*
+import org.tensorflow.op.core.Gradients
 import tomasvolker.komputo.TFOperation
 import tomasvolker.komputo.TFOutput
 import tomasvolker.komputo.dsl.buildOp
