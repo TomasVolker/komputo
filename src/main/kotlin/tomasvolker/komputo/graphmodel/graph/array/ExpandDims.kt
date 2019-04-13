@@ -6,6 +6,7 @@ import tomasvolker.komputo.graphmodel.proto.nodeDef
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.NodeDef
 import tomasvolker.komputo.graphmodel.graph.*
+import tomasvolker.komputo.graphmodel.graph.core.constant
 
 data class ExpandDims(
     override val name: String,
@@ -23,6 +24,8 @@ data class ExpandDims(
             }
 
     companion object: NodeParser<ExpandDims> {
+
+        init { GraphParser.default.register(this) }
 
         override val operationName: String = "ExpandDims"
 
@@ -56,3 +59,9 @@ fun ScopedGraphBuilder.expandDims(
     axis: OperandRef,
     name: String? = null
 ): ExpandDims = expandDims(input, axis, input.type, name)
+
+fun ScopedGraphBuilder.expandDims(
+    input: Operand,
+    axis: Int,
+    name: String? = null
+): ExpandDims = expandDims(input, constant(axis), name)

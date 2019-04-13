@@ -23,6 +23,8 @@ data class ScalarSummary(
 
     companion object: NodeParser<ScalarSummary> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "ScalarSummary"
 
         override fun parse(nodeDef: NodeDef): ScalarSummary =

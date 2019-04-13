@@ -23,6 +23,8 @@ data class MergeSummary(
 
     companion object: NodeParser<MergeSummary> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "MergeSummary"
 
         override fun parse(nodeDef: NodeDef): MergeSummary =

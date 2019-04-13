@@ -24,6 +24,8 @@ data class Reshape(
 
     companion object: NodeParser<Reshape> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "Reshape"
 
         override fun parse(nodeDef: NodeDef): Reshape =

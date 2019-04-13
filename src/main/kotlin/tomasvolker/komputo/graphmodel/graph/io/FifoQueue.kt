@@ -40,6 +40,8 @@ data class FifoQueue(
 
     companion object: NodeParser<FifoQueue> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "FIFOQueueV2"
 
         override fun parse(nodeDef: NodeDef): FifoQueue =

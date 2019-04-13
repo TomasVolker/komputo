@@ -34,6 +34,8 @@ data class ReaderRead(
 
     companion object: NodeParser<ReaderRead> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "ReaderReadV2"
 
         override fun parse(nodeDef: NodeDef): ReaderRead =

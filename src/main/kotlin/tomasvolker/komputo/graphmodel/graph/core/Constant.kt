@@ -7,6 +7,7 @@ import org.tensorflow.framework.DataType
 import org.tensorflow.framework.NodeDef
 import org.tensorflow.framework.TensorProto
 import tomasvolker.komputo.graphmodel.graph.AbstractOperandNode
+import tomasvolker.komputo.graphmodel.graph.GraphParser
 import tomasvolker.komputo.graphmodel.graph.NodeParser
 import tomasvolker.komputo.graphmodel.graph.ScopedGraphBuilder
 
@@ -24,6 +25,8 @@ data class Constant(
             }
 
     companion object: NodeParser<Constant> {
+
+        init { GraphParser.default.register(this) }
 
         override val operationName: String = "Const"
 

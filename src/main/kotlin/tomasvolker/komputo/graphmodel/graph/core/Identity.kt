@@ -21,6 +21,8 @@ data class Identity(
 
     companion object: NodeParser<Identity> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "Identity"
 
         override fun parse(nodeDef: NodeDef): Identity =

@@ -23,6 +23,8 @@ data class HistogramSummary(
 
     companion object: NodeParser<HistogramSummary> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "HistogramSummary"
 
         override fun parse(nodeDef: NodeDef): HistogramSummary =

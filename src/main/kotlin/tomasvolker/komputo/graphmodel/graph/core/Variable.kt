@@ -8,6 +8,7 @@ import tomasvolker.komputo.graphmodel.proto.nodeDef
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.NodeDef
 import org.tensorflow.framework.TensorShapeProto
+import tomasvolker.komputo.graphmodel.graph.GraphParser
 
 class Variable(
         override val name: String,
@@ -26,6 +27,8 @@ class Variable(
             }
 
     companion object: NodeParser<Variable> {
+
+        init { GraphParser.default.register(this) }
 
         override val operationName: String = "Variable"
 

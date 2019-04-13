@@ -21,6 +21,8 @@ data class ParseTensor(
 
     companion object: NodeParser<ParseTensor> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "ParseTensor"
 
         override fun parse(nodeDef: NodeDef): ParseTensor =

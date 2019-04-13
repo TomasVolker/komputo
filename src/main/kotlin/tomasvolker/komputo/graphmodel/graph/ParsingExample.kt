@@ -6,12 +6,17 @@ import tomasvolker.komputo.graphmodel.graph.array.reshape
 import tomasvolker.komputo.graphmodel.graph.core.constant
 import tomasvolker.komputo.graphmodel.graph.core.identity
 import tomasvolker.komputo.graphmodel.graph.io.*
+import tomasvolker.komputo.graphmodel.logging.tfEvent
 import tomasvolker.komputo.graphmodel.proto.shape
 import tomasvolker.komputo.graphmodel.proto.tensorProto
 import tomasvolker.komputo.graphmodel.proto.tensorShapeProto
+import tomasvolker.komputo.graphmodel.record.tfRecordWriter
+import tomasvolker.komputo.graphmodel.record.write
 import tomasvolker.komputo.graphmodel.runtime.readFloats
+import java.io.File
 
 fun main() {
+
 /*
     File("data/small.tfrecord").tfRecordWriter().use {
         it.write(
@@ -78,12 +83,20 @@ fun main() {
             type = DataType.DT_STRING
         )
 
-        val tensor = parseTensor(reshape, DataType.DT_FLOAT, "parseTensor")
+        val tensor = parseTensor(reshape, DataType.DT_FLOAT)
 
-        identity(tensor + tensor, "result")
+        identity(expandDims(tensor, 0) matMul expandDims(tensor, 1), "result")
 
     }.also { println(it) }
-
+/*
+    File("data/log/test.tfevents.${System.currentTimeMillis()}").tfRecordWriter().use {
+        it.write(
+            tfEvent {
+                graphDef = graph.toGraphDef().toByteString()
+            }
+        )
+    }
+*/
     graph.session {
 
         run {

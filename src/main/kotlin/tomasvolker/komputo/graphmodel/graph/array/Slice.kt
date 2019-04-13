@@ -29,6 +29,8 @@ data class Slice(
 
     companion object: NodeParser<Slice> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "Slice"
 
         override fun parse(nodeDef: NodeDef): Slice =

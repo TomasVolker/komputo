@@ -30,6 +30,8 @@ data class QueueEnqueue(
 
     companion object: NodeParser<QueueEnqueue> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "QueueEnqueueV2"
 
         override fun parse(nodeDef: NodeDef): QueueEnqueue =

@@ -21,6 +21,8 @@ data class PlaceholderWithDefault(
 
     companion object: NodeParser<PlaceholderWithDefault> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "PlaceholderWithDefault"
 
         override fun parse(nodeDef: NodeDef): PlaceholderWithDefault =

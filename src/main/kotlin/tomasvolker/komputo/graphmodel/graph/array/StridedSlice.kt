@@ -40,6 +40,8 @@ data class StridedSlice(
 
     companion object: NodeParser<StridedSlice> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "StridedSlice"
 
         override fun parse(nodeDef: NodeDef): StridedSlice =

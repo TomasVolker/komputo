@@ -25,6 +25,8 @@ data class Cast(
 
     companion object: NodeParser<Cast> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "Cast"
 
         override fun parse(nodeDef: NodeDef): Cast =

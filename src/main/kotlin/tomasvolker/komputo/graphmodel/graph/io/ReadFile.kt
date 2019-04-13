@@ -20,6 +20,8 @@ data class ReadFile(
 
     companion object: NodeParser<ReadFile> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "ReadFile"
 
         override fun parse(nodeDef: NodeDef): ReadFile =

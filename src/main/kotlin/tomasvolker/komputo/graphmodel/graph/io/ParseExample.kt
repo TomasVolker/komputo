@@ -100,6 +100,8 @@ data class ParseExample(
 
     companion object: NodeParser<ParseExample> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "ParseExample"
 
         override fun parse(nodeDef: NodeDef): ParseExample =

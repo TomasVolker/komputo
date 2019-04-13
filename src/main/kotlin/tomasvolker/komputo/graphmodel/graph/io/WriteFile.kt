@@ -20,6 +20,8 @@ data class WriteFile(
 
     companion object: NodeParser<WriteFile> {
 
+        init { GraphParser.default.register(this) }
+
         override val operationName: String = "WriteFile"
 
         override fun parse(nodeDef: NodeDef): WriteFile =

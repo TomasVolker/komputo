@@ -4,6 +4,7 @@ import org.tensorflow.framework.DataType
 import org.tensorflow.framework.NodeDef
 import org.tensorflow.framework.TensorShapeProto
 import tomasvolker.komputo.graphmodel.graph.AbstractGraphNode
+import tomasvolker.komputo.graphmodel.graph.GraphParser
 import tomasvolker.komputo.graphmodel.graph.NodeParser
 import tomasvolker.komputo.graphmodel.graph.ScopedGraphBuilder
 import tomasvolker.komputo.graphmodel.proto.attr
@@ -19,6 +20,8 @@ data class TFRecordReader(
         }
 
     companion object: NodeParser<TFRecordReader> {
+
+        init { GraphParser.default.register(this) }
 
         override val operationName: String = "TFRecordReaderV2"
 

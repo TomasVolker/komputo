@@ -8,6 +8,7 @@ import tomasvolker.komputo.graphmodel.proto.nodeDef
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.NodeDef
 import org.tensorflow.framework.TensorShapeProto
+import tomasvolker.komputo.graphmodel.graph.GraphParser
 
 data class Placeholder(
         override val name: String,
@@ -20,6 +21,8 @@ data class Placeholder(
             }
 
     companion object: NodeParser<Placeholder> {
+
+        init { GraphParser.default.register(this) }
 
         override val operationName: String = "Placeholder"
 

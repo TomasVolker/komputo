@@ -1,21 +1,8 @@
 package tomasvolker.komputo.graphmodel.graph
 
-import org.tensorflow.framework.DataType
-import tomasvolker.komputo.graphmodel.graph.core.Add
-import tomasvolker.komputo.graphmodel.graph.core.add
-import tomasvolker.komputo.graphmodel.graph.core.constant
-import tomasvolker.komputo.graphmodel.runtime.readBytes
-import tomasvolker.komputo.graphmodel.utils.asFloatBuffer
 import org.tensorflow.framework.GraphDef
-import tomasvolker.komputo.graphmodel.graph.array.expandDims
-import tomasvolker.komputo.graphmodel.graph.array.reshape
-import tomasvolker.komputo.graphmodel.graph.core.identity
-import tomasvolker.komputo.graphmodel.graph.io.*
+import tomasvolker.komputo.graphmodel.graph.math.*
 import tomasvolker.komputo.graphmodel.proto.*
-import tomasvolker.komputo.graphmodel.record.tfRecordWriter
-import tomasvolker.komputo.graphmodel.runtime.readFloats
-import tomasvolker.komputo.graphmodel.utils.toByteString
-import java.io.File
 import java.lang.IllegalArgumentException
 
 fun computationGraph(init: ScopedGraphBuilder.() -> Unit): ComputationGraph =
@@ -106,5 +93,9 @@ class ScopedGraphBuilder(
     }
 
     operator fun Operand.plus(other: Operand): Add = add(this, other)
+    operator fun Operand.minus(other: Operand): Sub = subtract(this, other)
+    operator fun Operand.times(other: Operand): Mul = multiply(this, other)
+    operator fun Operand.div(other: Operand): Div = div(this, other)
+    infix fun Operand.matMul(other: Operand): MatMul = matMul(this, other)
 
 }
