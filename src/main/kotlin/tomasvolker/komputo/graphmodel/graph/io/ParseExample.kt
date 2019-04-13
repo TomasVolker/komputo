@@ -53,8 +53,7 @@ data class ParseExample(
     override val outputList = sparseIndices + sparseValues + sparseShapes + denseValues
 
     override fun toNodeDef(): NodeDef =
-        nodeDef(operationName) {
-            name = this@ParseExample.name
+        nodeDef(operationName, name) {
             input(input)
 
             input(names)

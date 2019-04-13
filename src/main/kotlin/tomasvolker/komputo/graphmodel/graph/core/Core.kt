@@ -16,8 +16,7 @@ data class Add(
 ): AbstractOperandNode() {
 
     override fun toNodeDef(): NodeDef =
-            nodeDef(operationName) {
-                name = this@Add.name
+            nodeDef(operationName, name) {
                 input(input1)
                 input(input2)
                 attr("T", type)

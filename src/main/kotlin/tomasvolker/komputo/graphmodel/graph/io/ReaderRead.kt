@@ -27,8 +27,7 @@ data class ReaderRead(
         )
 
     override fun toNodeDef(): NodeDef =
-        nodeDef(operationName) {
-            name = this@ReaderRead.name
+        nodeDef(operationName, name) {
             input(reader.name)
             input(queue.name)
         }

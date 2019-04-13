@@ -16,8 +16,7 @@ data class QueueEnqueue(
 ): AbstractGraphNode() {
 
     override fun toNodeDef(): NodeDef =
-        nodeDef(operationName) {
-            name = this@QueueEnqueue.name
+        nodeDef(operationName, name) {
             input(queue.name)
             values.forEach {
                 input(it)
@@ -58,4 +57,16 @@ fun ScopedGraphBuilder.queueEnqueue(
         queue = queue,
         values = values,
         componentTypes = componentTypes
+    ).also { addNode(it) }
+
+fun ScopedGraphBuilder.queueEnqueue(
+    queue: Queue,
+    values: List<OperandRef>,
+    name: String? = null
+): QueueEnqueue =
+    QueueEnqueue(
+        name = name ?: newName(QueueEnqueue.operationName),
+        queue = queue,
+        values = values,
+        componentTypes = queue.componentTypes
     ).also { addNode(it) }

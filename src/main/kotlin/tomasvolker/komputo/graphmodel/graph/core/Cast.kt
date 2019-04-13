@@ -15,8 +15,7 @@ data class Cast(
 ): AbstractOperandNode() {
 
     override fun toNodeDef(): NodeDef =
-            nodeDef(operationName) {
-                name = this@Cast.name
+            nodeDef(operationName, name) {
                 input(input)
                 attr("DstT", type)
                 truncate?.run {

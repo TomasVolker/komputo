@@ -14,8 +14,7 @@ data class ReadFile(
     override val type: DataType get() = DataType.DT_STRING
 
     override fun toNodeDef(): NodeDef =
-            nodeDef(operationName) {
-                name = this@ReadFile.name
+            nodeDef(operationName, name) {
                 input(input)
             }
 

@@ -18,8 +18,7 @@ class Variable(
 ): AbstractOperandNode() {
 
     override fun toNodeDef(): NodeDef =
-            nodeDef(operationName) {
-                name = this@Variable.name
+            nodeDef(operationName, name) {
                 attr("dtype", type)
                 attr("shape", shape)
                 container?.let { attr("container", it) }

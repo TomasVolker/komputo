@@ -18,8 +18,7 @@ data class Constant(
     override val type: DataType get() = value.dtype
 
     override fun toNodeDef(): NodeDef =
-            nodeDef(operationName) {
-                name = this@Constant.name
+            nodeDef(operationName, name) {
                 attr("dtype", value.dtype)
                 attr("value", value)
             }

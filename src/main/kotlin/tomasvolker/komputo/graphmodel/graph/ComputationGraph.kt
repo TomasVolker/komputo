@@ -9,101 +9,14 @@ import tomasvolker.komputo.graphmodel.utils.asFloatBuffer
 import org.tensorflow.framework.GraphDef
 import tomasvolker.komputo.graphmodel.graph.array.expandDims
 import tomasvolker.komputo.graphmodel.graph.array.reshape
+import tomasvolker.komputo.graphmodel.graph.core.identity
 import tomasvolker.komputo.graphmodel.graph.io.*
 import tomasvolker.komputo.graphmodel.proto.*
 import tomasvolker.komputo.graphmodel.record.tfRecordWriter
+import tomasvolker.komputo.graphmodel.runtime.readFloats
 import tomasvolker.komputo.graphmodel.utils.toByteString
 import java.io.File
 import java.lang.IllegalArgumentException
-
-fun main() {
-
-    File("data/small.tfrecord").tfRecordWriter().use {
-        it.write(
-            exampleProto {
-                features {
-                    feature("value", 5.0)
-                }
-            }.toByteArray()
-        )
-    }
-
-
-    val graph = computationGraph {
-
-        val filesQueue = fifoQueue(listOf(DataType.DT_STRING), name = "filesQueue")
-
-        val filename = constant("./data/small.tfrecord")
-
-        val enqueue = queueEnqueue(filesQueue, listOf(filename), listOf(DataType.DT_STRING), "enqueueFile")
-
-        val dequeue = queueDequeue(filesQueue, listOf(DataType.DT_STRING), "dequeueFile")
-
-        val recordReader = tfRecordReader("reader")
-
-        val read = readerRead(recordReader, filesQueue, "read")
-
-        val expand = expandDims(read.outputList[1], constant(0), DataType.DT_STRING, "expand")
-
-        val parsed = parseExample(
-            input = expand,
-            names = constant(
-                tensorProto {
-                    dtype = DataType.DT_STRING
-                    shape(1)
-                    addStringVal("value".toByteString())
-                }
-            ),
-            denseKeys = listOf(
-                constant("value")
-            ),
-            denseDefaults = listOf(
-                constant(
-                    tensorProto {
-                        dtype = DataType.DT_FLOAT
-                        shape(0)
-                    }
-                )
-            ),
-            denseTypes = listOf(DataType.DT_FLOAT),
-            denseShapes = listOf(tensorShapeProto { }),
-            name = "parseExample"
-        )
-/*
-        val reshape = reshape(
-            input = parsed.denseValues[0],
-            shape = constant(
-                    tensorProto {
-                        dtype = DataType.DT_INT32
-                        shape(0)
-                    }
-            ),
-            type = DataType.DT_STRING
-        )
-
-        val tensor = parseTensor(reshape, DataType.DT_FLOAT, "parseTensor")
-*/
-    }.also { println(it) }
-
-    graph.session {
-
-        run {
-            addTarget("enqueueFile")
-        }
-
-        val result = run {
-            fetch("parseExample")
-        }
-
-        println(result[0])
-
-        result[0].readBytes().asFloatBuffer().also {
-            println(it[0])
-        }
-
-    }
-
-}
 
 fun computationGraph(init: ScopedGraphBuilder.() -> Unit): ComputationGraph =
         GraphBuilder().apply { scoped().apply(init) }.build()

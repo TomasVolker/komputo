@@ -15,8 +15,7 @@ data class TFRecordReader(
 ): AbstractGraphNode() {
 
     override fun toNodeDef(): NodeDef =
-        nodeDef(operationName) {
-            name = this@TFRecordReader.name
+        nodeDef(operationName, name) {
         }
 
     companion object: NodeParser<TFRecordReader> {

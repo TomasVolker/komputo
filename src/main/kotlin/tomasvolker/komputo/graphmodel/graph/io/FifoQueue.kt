@@ -10,16 +10,15 @@ import tomasvolker.komputo.graphmodel.proto.nodeDef
 
 data class FifoQueue(
     override val name: String,
-    val componentTypes: List<DataType>,
+    override val componentTypes: List<DataType>,
     val componentShapes: List<TensorShapeProto>? = null,
     val capacity: Long? = null,
     val container: String? = null,
     val sharedName: String? = null
-): AbstractGraphNode() {
+): AbstractGraphNode(), Queue {
 
     override fun toNodeDef(): NodeDef =
-        nodeDef(operationName) {
-            name = this@FifoQueue.name
+        nodeDef(operationName, name) {
             attr("component_types") {
                 list = attrListValue {
                     componentTypes.forEach { addType(it) }

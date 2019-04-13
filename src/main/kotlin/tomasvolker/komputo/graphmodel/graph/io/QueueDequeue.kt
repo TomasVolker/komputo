@@ -25,8 +25,7 @@ data class QueueDequeue(
         }
 
     override fun toNodeDef(): NodeDef =
-        nodeDef(operationName) {
-            name = this@QueueDequeue.name
+        nodeDef(operationName, name) {
             input(queue.name)
             attr("component_types") {
                 list = attrListValue {
@@ -63,19 +62,8 @@ fun ScopedGraphBuilder.queueDequeue(
         componentTypes = componentTypes
     ).also { addNode(it) }
 
-/*
-fun ScopedGraphBuilder.dequeue(
-        queue: NodeDef,
-        dataTypeList: List<DataType>,
-        name: String? = null
-): NodeDef =
-        node("QueueDequeueV2", name) {
-            input(queue)
-            attr("component_types") {
-                list = attrListValue {
-                    dataTypeList.forEach { addType(it) }
-                }
-            }
-        }
 
-*/
+fun ScopedGraphBuilder.queueDequeue(
+    queue: Queue,
+    name: String? = null
+): QueueDequeue = queueDequeue(queue, queue.componentTypes, name)

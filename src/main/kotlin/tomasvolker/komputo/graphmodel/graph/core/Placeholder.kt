@@ -15,8 +15,7 @@ data class Placeholder(
 ): AbstractOperandNode() {
 
     override fun toNodeDef(): NodeDef =
-            nodeDef("Placeholder") {
-                name = this@Placeholder.name
+            nodeDef(operationName, name) {
                 attr("dtype", type)
             }
 

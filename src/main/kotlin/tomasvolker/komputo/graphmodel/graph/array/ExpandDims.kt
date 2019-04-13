@@ -50,3 +50,9 @@ fun ScopedGraphBuilder.expandDims(
                 axis = axis,
                 type = type
         ).also { addNode(it) }
+
+fun ScopedGraphBuilder.expandDims(
+    input: Operand,
+    axis: OperandRef,
+    name: String? = null
+): ExpandDims = expandDims(input, axis, input.type, name)

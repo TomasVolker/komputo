@@ -11,6 +11,12 @@ inline fun nodeDef(operation: String, init: NodeDef.Builder.()->Unit): NodeDef =
             op = operation
             init()
         }
+inline fun nodeDef(operation: String, name: String, init: NodeDef.Builder.()->Unit): NodeDef =
+    nodeDef(operation) {
+        this.name = name
+        init()
+    }
+
 inline fun attrValue(init: AttrValue.Builder.()->Unit): AttrValue = AttrValue.newBuilder().apply(init).build()
 inline fun attrListValue(init: AttrValue.ListValue.Builder.()->Unit): AttrValue.ListValue =
         AttrValue.ListValue.newBuilder().apply(init).build()
