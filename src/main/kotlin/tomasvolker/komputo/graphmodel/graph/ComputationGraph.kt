@@ -1,5 +1,6 @@
 package tomasvolker.komputo.graphmodel.graph
 
+import org.tensorflow.framework.DataType
 import org.tensorflow.framework.GraphDef
 import tomasvolker.komputo.graphmodel.graph.math.*
 import tomasvolker.komputo.graphmodel.proto.*
@@ -92,6 +93,16 @@ class ScopedGraphBuilder(
         ScopedGraphBuilder(builder,"$scopeName$name/").block()
     }
 
+    val DT_FLOAT: DataType get() = DataType.DT_FLOAT
+    val DT_DOUBLE: DataType get() = DataType.DT_DOUBLE
+    val DT_UINT8: DataType get() = DataType.DT_UINT8
+    val DT_INT8: DataType get() = DataType.DT_INT8
+    val DT_INT16: DataType get() = DataType.DT_INT16
+    val DT_INT32: DataType get() = DataType.DT_INT32
+    val DT_INT64: DataType get() = DataType.DT_INT64
+    val DT_STRING: DataType get() = DataType.DT_STRING
+    val DT_BOOL: DataType get() = DataType.DT_BOOL
+
     operator fun Operand.plus(other: Operand): Add = add(this, other)
     operator fun Operand.minus(other: Operand): Sub = subtract(this, other)
     operator fun Operand.times(other: Operand): Mul = multiply(this, other)
@@ -99,3 +110,5 @@ class ScopedGraphBuilder(
     infix fun Operand.matMul(other: Operand): MatMul = matMul(this, other)
 
 }
+
+

@@ -1,6 +1,8 @@
 package tomasvolker.komputo.graphmodel.runtime
 
 import org.tensorflow.Tensor
+import org.tensorflow.framework.DataType
+import org.tensorflow.framework.TensorProto
 import java.nio.*
 
 fun Tensor<*>.readBytes(): ByteArray = use {
@@ -34,4 +36,11 @@ fun Tensor<*>.readFloats(): FloatArray = use {
     buffer.array()
 }
 
+/*
+fun TensorProto.toTensor(): Tensor<*> =
+        when(dtype) {
+            DataType.DT_FLOAT ->
+                Tensor.create()
+        }
 
+ */

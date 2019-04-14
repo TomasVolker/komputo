@@ -1,20 +1,33 @@
 package tomasvolker.komputo.graphmodel.graph
 
 import com.google.protobuf.ByteString
+import org.tensorflow.Tensor
 import org.tensorflow.framework.GraphDef
 import org.tensorflow.framework.NodeDef
 import tomasvolker.komputo.graphmodel.graph.core.constant
+import tomasvolker.komputo.graphmodel.graph.core.identity
+import tomasvolker.komputo.graphmodel.graph.core.placeholder
 import java.io.InputStream
 import java.nio.ByteBuffer
 
 fun main() {
 
-    val graphdef = computationGraph {
-        constant(5) + constant(6)
-    }.toGraphDef()
+    val graph = computationGraph {
 
-    GraphParser.default.parseGraph(graphdef).also { println(it) }
+        val input = placeholder(DT_FLOAT, name = "input")
 
+        identity(constant(5.2f) + input, "output")
+    }
+/*
+    graph.session {
+
+        val result = run {
+            feed("input", Tensor.create())
+            fetch("output")
+        }
+
+    }
+*/
 }
 
 class GraphParser {
